@@ -16,23 +16,30 @@ package aerys.minko.type.parser.obj
 	import flash.events.EventDispatcher;
 	import flash.net.URLRequest;
 	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
+	import flash.utils.getTimer;
 	
+	/**
+	 * 
+	 * @author Romain Gilliotte <romain.gilliotte@aerys.in>
+	 * 
+	 */	
 	public class ObjParser extends EventDispatcher implements IParser
 	{
-		private static const INDEX_LIMIT	: uint = 524287;
-		private static const VERTEX_LIMIT	: uint = 65536;
+		private static const INDEX_LIMIT	: uint = 524270;
+		private static const VERTEX_LIMIT	: uint = 65535;
 		
 		private static const TEN_POWERS		: Vector.<Number> = Vector.<Number>([
 			1,
-			0.1, 
-			0.01, 
-			0.001, 
-			0.0001, 
-			0.00001, 
-			0.000001, 
-			0.0000001, 
-			0.00000001, 
-			0.000000001, 
+			0.1,
+			0.01,
+			0.001,
+			0.0001,
+			0.00001,
+			0.000001,
+			0.0000001,
+			0.00000001,
+			0.000000001,
 			0.0000000001,
 			0.00000000001,
 			0.000000000001,
@@ -78,10 +85,17 @@ package aerys.minko.type.parser.obj
 							  options	: ParserOptions) : Boolean
 		{
 			_options = options;
-			
 			reset();
+			
+			var t : uint = getTimer();
+			
 			readData(data);
+			
+			trace(getTimer() - t);
+			t = getTimer();
 			createGroups();
+			
+			trace(getTimer() - t);
 			
 			dispatchEvent(new Event(Event.COMPLETE));
 			
@@ -215,6 +229,8 @@ package aerys.minko.type.parser.obj
 		
 		private function parseFloats(data : ByteArray, nbFloats : uint, destination : Vector.<Number>) : void
 		{
+			var eolReached : Boolean = false;
+			
 			for (var i : uint = 0; i < nbFloats; ++i)
 			{
 				var currentDigits	: uint		= 0;
@@ -240,16 +256,31 @@ package aerys.minko.type.parser.obj
 					{
 						isDecimalPart = 1;
 					}
-					else
+					else if (readChar == 0x20)
 					{
 						break;
+					}
+					else if (readChar == 0x0d)
+					{
+						break;
+					}
+					else if (readChar == 0x0a)
+					{
+						++_currentLine;
+						eolReached = true;
+						break;
+					}
+					else
+					{
+						throw new Error('Malformed OBJ file');
 					}
 				}
 				
 				destination.push(isPositive * currentDigits * TEN_POWERS[decimalOpPower]);
 			}
 			
-			gotoNextLine(data);
+			if (!eolReached)
+				gotoNextLine(data);
 		}
 		
 		private function parseFace(data			: ByteArray, 
@@ -298,7 +329,10 @@ package aerys.minko.type.parser.obj
 								);
 				}
 				else
-					processingOk = false
+				{
+					processingOk = false;
+				}
+				
 				
 				if (readChar == 0x0d) // "\r"
 				{
@@ -520,7 +554,8 @@ package aerys.minko.type.parser.obj
 				var newVertexIds		: Vector.<int>		= new Vector.<int>(3, true);
 				var newVertexNeeded		: Vector.<Boolean>	= new Vector.<Boolean>(3, true);
 				
-				var usedVertices		: Vector.<uint>		= new Vector.<uint>();	// tableau de correspondance entre anciens et nouveaux indices
+//				var usedVertices		: Vector.<uint>		= new Vector.<uint>();	// tableau de correspondance entre anciens et nouveaux indices
+				var usedVerticesDic		: Dictionary		= new Dictionary();
 				var usedVerticesCount	: uint				= 0;					// taille du tableau ci dessus
 				var usedIndicesCount	: uint				= 0;					// quantitee d'indices utilises pour l'instant
 				var neededVerticesCount	: uint;
@@ -532,7 +567,6 @@ package aerys.minko.type.parser.obj
 				
 				while (usedIndicesCount < indexDataLength)
 				{
-					
 					// check si le triangle suivant rentrera dans l'index buffer
 					var remainingIndexes	: uint		= INDEX_LIMIT - usedIndicesCount;
 					if (remainingIndexes < 3)
@@ -544,9 +578,16 @@ package aerys.minko.type.parser.obj
 					neededVerticesCount = 0;
 					for (localVertexId = 0; localVertexId < 3; ++localVertexId)
 					{
+						var t : uint = getTimer();	
 						oldVertexIds[localVertexId]		= indexData[uint(usedIndicesCount + localVertexId)];
-						newVertexIds[localVertexId]		= usedVertices.indexOf(oldVertexIds[localVertexId]);
-						newVertexNeeded[localVertexId]	= newVertexIds[localVertexId] == -1;
+						
+						var tmp : Object = usedVerticesDic[oldVertexIds[localVertexId]];
+						
+						newVertexNeeded[localVertexId]	= tmp == null;
+						newVertexIds[localVertexId]		= uint(tmp);
+						
+//						newVertexIds[localVertexId]		= usedVertices.lastIndexOf(oldVertexIds[localVertexId]);
+//						newVertexNeeded[localVertexId]	= newVertexIds[localVertexId] == -1;
 						
 						if (newVertexNeeded[localVertexId])
 							++neededVerticesCount;
@@ -571,7 +612,9 @@ package aerys.minko.type.parser.obj
 							newVertexIds[localVertexId] = usedVerticesCount;
 							
 							// on note son ancien id dans le tableau temporaire
-							usedVertices[usedVerticesCount++] = oldVertexIds[localVertexId];
+//							usedVertices[usedVerticesCount++] = oldVertexIds[localVertexId];
+							
+							usedVerticesDic[oldVertexIds[localVertexId]] = usedVerticesCount++;
 						}
 						
 						partialIndexData.push(newVertexIds[localVertexId]);
