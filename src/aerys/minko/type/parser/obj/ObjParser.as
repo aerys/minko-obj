@@ -27,8 +27,8 @@ package aerys.minko.type.parser.obj
 	public class ObjParser extends EventDispatcher implements IParser
 	{
 		private static const INDEX_LIMIT				: uint						= 524270;
-		private static const VERTEX_LIMIT				: uint						= 65535;
-		private static const MERGE_DUPLICATED_VERTICES	: Boolean					= false;
+		private static const VERTEX_LIMIT				: uint						= 5000;
+		private static const MERGE_DUPLICATED_VERTICES	: Boolean					= true;
 		private static const TMP_BUFFER					: Vector.<Vector.<uint>>	= new Vector.<Vector.<uint>>(3);
 		
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
@@ -74,8 +74,8 @@ package aerys.minko.type.parser.obj
 		public function parse(data		: ByteArray, 
 							  options	: ParserOptions) : Boolean
 		{
-//			try
-//			{
+			try
+			{
 				_options = options;
 				reset();
 				
@@ -89,11 +89,11 @@ package aerys.minko.type.parser.obj
 				dispatchEvent(new Event(Event.COMPLETE));
 				
 				return true;
-//			}
-//			catch (e : Error)
-//			{
-//			}
-//			return false;
+			}
+			catch (e : Error)
+			{
+			}
+			return false;
 		}
 		
 		private function reset() : void
@@ -426,13 +426,13 @@ package aerys.minko.type.parser.obj
 				vertexFormat.addComponent(VertexComponent.UV);
 			}
 			
-			if (normalsCounts != 0)
+			/*if (normalsCounts != 0)
 			{
 				if (normalsCounts != numIndices)
 					throw new Error('Invalid OBJ file');
 				
 				vertexFormat.addComponent(VertexComponent.NORMAL);
-			}
+			}*/
 			
 			return vertexFormat;
 		}
@@ -445,6 +445,8 @@ package aerys.minko.type.parser.obj
 			
 			var t1 : uint = getTimer();
 			fillBuffers(meshId, format, indexBuffer, vertexBuffer);
+			
+			
 			trace('buffer filling for mesh', meshId, ':', getTimer() - t1);
 			
 			var result			: Vector.<IMesh>	= new Vector.<IMesh>();
