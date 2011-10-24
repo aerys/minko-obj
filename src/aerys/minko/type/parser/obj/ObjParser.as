@@ -26,27 +26,17 @@ package aerys.minko.type.parser.obj
 	 */	
 	public class ObjParser extends EventDispatcher implements IParser
 	{
-		private static const INDEX_LIMIT	: uint = 524270;
-		private static const VERTEX_LIMIT	: uint = 65535;
+		private static const INDEX_LIMIT				: uint						= 524270;
+		private static const VERTEX_LIMIT				: uint						= 65535;
+		private static const MERGE_DUPLICATED_VERTICES	: Boolean					= false;
+		private static const TMP_BUFFER					: Vector.<Vector.<uint>>	= new Vector.<Vector.<uint>>(3);
 		
-		private static const TEN_POWERS		: Vector.<Number> = Vector.<Number>([
-			1,
-			0.1,
-			0.01,
-			0.001,
-			0.0001,
-			0.00001,
-			0.000001,
-			0.0000001,
-			0.00000001,
-			0.000000001,
-			0.0000000001,
-			0.00000000001,
-			0.000000000001,
-			0.0000000000001
+		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
+			1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001,
+			0.0000001, 0.00000001, 0.000000001, 0.0000000001,
+			0.00000000001, 0.000000000001, 0.0000000000001
 		]);
 		
-		private static const TMP_BUFFER	: Vector.<Vector.<uint>> = new Vector.<Vector.<uint>>(3);
 		
 		private var _data					: Vector.<IScene>;
 		private var _options				: ParserOptions;
@@ -84,22 +74,26 @@ package aerys.minko.type.parser.obj
 		public function parse(data		: ByteArray, 
 							  options	: ParserOptions) : Boolean
 		{
-			_options = options;
-			reset();
-			
-			var t : uint = getTimer();
-			
-			readData(data);
-			
-			trace(getTimer() - t);
-			t = getTimer();
-			createGroups();
-			
-			trace(getTimer() - t);
-			
-			dispatchEvent(new Event(Event.COMPLETE));
-			
-			return true;
+//			try
+//			{
+				_options = options;
+				reset();
+				
+				var t : uint = getTimer();
+				readData(data);
+				trace('vertices and indexes parsing:', getTimer() - t);
+				
+				createGroups();
+				
+				trace('--------------------');
+				dispatchEvent(new Event(Event.COMPLETE));
+				
+				return true;
+//			}
+//			catch (e : Error)
+//			{
+//			}
+//			return false;
 		}
 		
 		private function reset() : void
@@ -131,17 +125,18 @@ package aerys.minko.type.parser.obj
 						switch (data.readUnsignedByte())
 						{
 							case 0x20: // " "
+								eatSpaces(data);
 								parseFloats(data, 3, _positions);
 								break;
 							
 							case 0x6e: // "n"
-								skipChars(data, 1);
+								eatSpaces(data);
 								parseFloats(data, 3, _normals);
 								
 								break;
 							
 							case 0x74: // "t"
-								skipChars(data, 1);
+								eatSpaces(data);
 								parseFloats(data, 2, _uvs);
 								break;
 							
@@ -193,6 +188,13 @@ package aerys.minko.type.parser.obj
 		{
 			while (numChars--)
 				data.readUnsignedByte();
+		}
+		
+		private function eatSpaces(data : ByteArray) : void
+		{
+			while (data.readUnsignedByte() == 0x20)
+				continue;
+			--data.position;
 		}
 		
 		private function gotoNextLine(data : ByteArray) : void
@@ -296,43 +298,50 @@ package aerys.minko.type.parser.obj
 			TMP_BUFFER[1] = _groupFacesUvs[materialId];
 			TMP_BUFFER[2] = _groupFacesNormals[materialId];
 			
+			var lastWasNumber : Boolean = false;
 			while (true)
 			{
 				var readChar		: uint		= data.readUnsignedByte();
 				var processingOk	: Boolean	= true;
 				
-				if (readChar >= 0x30 && readChar < 0x3a)
+				if (readChar >= 0x30 && readChar < 0x3a) // ['0'-'9']
 				{
 					currentIndex = 10 * currentIndex + readChar - 0x30;
+					lastWasNumber = true;
 				}
 				else if (readChar == 0x2f) // "/"
 				{
 					TMP_BUFFER[currentIndexSemantic].push(currentIndex);
 					currentIndex = 0;
 					++currentIndexSemantic;
+					lastWasNumber = false;
 				}
 				else if (readChar == 0x20 || readChar == 0x0d || readChar == 0x0a) // " " || "\r" || "\n"
 				{
-					// push new point
-					TMP_BUFFER[currentIndexSemantic].push(currentIndex);
-					currentIndex = 0;
-					currentIndexSemantic = 0;
-					++numVertices;
-					
-					// triangulate
-					if (numVertices > 3)
-						for (var i : uint = 0; i < 3; ++i)
-							if (TMP_BUFFER[i].length != 0)
-								TMP_BUFFER[i].push(
-									TMP_BUFFER[i][TMP_BUFFER[i].length - numVertices],
-									TMP_BUFFER[i][TMP_BUFFER[i].length - 2]
-								);
+					if (lastWasNumber)
+					{
+						// push new point
+						TMP_BUFFER[currentIndexSemantic].push(currentIndex);
+						currentIndex = 0;
+						currentIndexSemantic = 0;
+						++numVertices;
+						lastWasNumber = false;
+						
+						// triangulate
+						if (numVertices > 3)
+							for (var i : uint = 0; i < 3; ++i)
+								if (TMP_BUFFER[i].length != 0)
+									TMP_BUFFER[i].push(
+										TMP_BUFFER[i][TMP_BUFFER[i].length - numVertices],
+										TMP_BUFFER[i][TMP_BUFFER[i].length - 2]
+									);
+					}
 				}
 				else
 				{
 					processingOk = false;
+					lastWasNumber = false;
 				}
-				
 				
 				if (readChar == 0x0d) // "\r"
 				{
@@ -434,7 +443,9 @@ package aerys.minko.type.parser.obj
 			var indexBuffer		: Vector.<uint>		= new Vector.<uint>();
 			var vertexBuffer	: Vector.<Number>	= new Vector.<Number>();
 			
+			var t1 : uint = getTimer();
 			fillBuffers(meshId, format, indexBuffer, vertexBuffer);
+			trace('buffer filling for mesh', meshId, ':', getTimer() - t1);
 			
 			var result			: Vector.<IMesh>	= new Vector.<IMesh>();
 			var indexStream		: IndexStream;
@@ -442,13 +453,15 @@ package aerys.minko.type.parser.obj
 			
 			if (indexBuffer.length < INDEX_LIMIT && vertexBuffer.length / format.dwordsPerVertex < VERTEX_LIMIT)
 			{
-				indexStream		= new IndexStream(indexBuffer);
-				vertexStream	= new VertexStream(vertexBuffer, format);
+				trace('no splitting needed for mesh', meshId);
+				indexStream		= new IndexStream(indexBuffer, 0, _options.keepStreamsDynamic);
+				vertexStream	= new VertexStream(vertexBuffer, format, _options.keepStreamsDynamic);
 				
 				result.push(new Mesh(vertexStream, indexStream));
 			}
 			else
 			{
+				var t2 : uint = getTimer();
 				var indexBuffers	: Vector.<Vector.<uint>>	= new Vector.<Vector.<uint>>();
 				var vertexBuffers	: Vector.<Vector.<Number>>	= new Vector.<Vector.<Number>>();
 				
@@ -458,11 +471,12 @@ package aerys.minko.type.parser.obj
 				
 				for (var i : uint = 0; i < numMeshes; ++i)
 				{
-					indexStream		= new IndexStream(indexBuffers[i]);
-					vertexStream	= new VertexStream(vertexBuffers[i], format);
+					indexStream		= new IndexStream(indexBuffers[i], 0, _options.keepStreamsDynamic);
+					vertexStream	= new VertexStream(vertexBuffers[i], format, _options.keepStreamsDynamic);
 					
 					result.push(new Mesh(vertexStream, indexStream));
 				}
+				trace('buffer splitting for mesh ', meshId, ':', getTimer() - t2);
 			}
 			
 			return result;
@@ -473,21 +487,24 @@ package aerys.minko.type.parser.obj
 									 indexData	: Vector.<uint>, 
 									 vertexData	: Vector.<Number>) : void
 		{
-			var useUVs					: Boolean			= format.hasComponent(VertexComponent.UV);
-			var useNormals				: Boolean			= format.hasComponent(VertexComponent.NORMAL);
+			var useUVs					: Boolean				= format.hasComponent(VertexComponent.UV);
+			var useNormals				: Boolean				= format.hasComponent(VertexComponent.NORMAL);
+			var dwordsPerVertex			: uint					= 3 + 2 * uint(useUVs) + 3 * uint(useNormals);
 			
-			var verticesToIndex			: Object			= new Object();
+			var vertexIndex				: uint;
+
+			var verticesToIndex			: Object				= new Object();
 			
-			var tmpVertex				: Vector.<Number>	= new Vector.<Number>();
-			var tmpVertexComponentId	: uint				= 0;
-			var tmpVertexDwords			: uint				= 3 + 2 * uint(useUVs) + 3 * uint(useNormals);
+			var tmpVertex				: Vector.<Number>		= new Vector.<Number>();
+			var tmpVertexComponentId	: uint					= 0;
+			var tmpVertexDwords			: uint					= dwordsPerVertex;
 			
-			var positionIndices			: Vector.<uint>		= _groupFacesPositions[meshId];
-			var uvsIndices				: Vector.<uint>		= _groupFacesUvs[meshId];
-			var normalIndices			: Vector.<uint>		= _groupFacesNormals[meshId];
+			var positionIndices			: Vector.<uint>			= _groupFacesPositions[meshId];
+			var uvsIndices				: Vector.<uint>			= _groupFacesUvs[meshId];
+			var normalIndices			: Vector.<uint>			= _groupFacesNormals[meshId];
 			
-			var numIndices				: uint				= positionIndices.length;
-			var currentNumVertices		: uint				= 0;
+			var numIndices				: uint					= positionIndices.length;
+			var currentNumVertices		: uint					= 0;
 			
 			for (var indexId : uint = 0; indexId < numIndices; ++indexId)
 			{
@@ -521,16 +538,29 @@ package aerys.minko.type.parser.obj
 					tmpVertex[tmpVertexComponentId++] = _normals[int(normalIndex + 2)];
 				}
 				
-				var joinedVertex	: String	= tmpVertex.join('|');
-				if (!verticesToIndex.hasOwnProperty(joinedVertex))
+				if (MERGE_DUPLICATED_VERTICES)
+				{
+					var joinedVertex	: String	= tmpVertex.join('|');
+					
+					if (!verticesToIndex.hasOwnProperty(joinedVertex))
+					{
+						for (tmpVertexComponentId = 0; tmpVertexComponentId < tmpVertexDwords; ++tmpVertexComponentId)
+							vertexData.push(tmpVertex[tmpVertexComponentId]);
+					
+						verticesToIndex[joinedVertex] = vertexIndex = currentNumVertices++;
+					}
+					else
+					{
+						vertexIndex = verticesToIndex[joinedVertex];
+					}
+					indexData.push(vertexIndex);
+				}
+				else
 				{
 					for (tmpVertexComponentId = 0; tmpVertexComponentId < tmpVertexDwords; ++tmpVertexComponentId)
 						vertexData.push(tmpVertex[tmpVertexComponentId]);
-					
-					verticesToIndex[joinedVertex] = currentNumVertices++;
+					indexData.push(currentNumVertices++);
 				}
-				
-				indexData.push(verticesToIndex[joinedVertex]);
 			}
 		}
 		
@@ -554,8 +584,7 @@ package aerys.minko.type.parser.obj
 				var newVertexIds		: Vector.<int>		= new Vector.<int>(3, true);
 				var newVertexNeeded		: Vector.<Boolean>	= new Vector.<Boolean>(3, true);
 				
-//				var usedVertices		: Vector.<uint>		= new Vector.<uint>();	// tableau de correspondance entre anciens et nouveaux indices
-				var usedVerticesDic		: Dictionary		= new Dictionary();
+				var usedVerticesDic		: Dictionary		= new Dictionary();		// dico de correspondance entre anciens et nouveaux indices
 				var usedVerticesCount	: uint				= 0;					// taille du tableau ci dessus
 				var usedIndicesCount	: uint				= 0;					// quantitee d'indices utilises pour l'instant
 				var neededVerticesCount	: uint;
@@ -586,9 +615,6 @@ package aerys.minko.type.parser.obj
 						newVertexNeeded[localVertexId]	= tmp == null;
 						newVertexIds[localVertexId]		= uint(tmp);
 						
-//						newVertexIds[localVertexId]		= usedVertices.lastIndexOf(oldVertexIds[localVertexId]);
-//						newVertexNeeded[localVertexId]	= newVertexIds[localVertexId] == -1;
-						
 						if (newVertexNeeded[localVertexId])
 							++neededVerticesCount;
 					}
@@ -612,8 +638,6 @@ package aerys.minko.type.parser.obj
 							newVertexIds[localVertexId] = usedVerticesCount;
 							
 							// on note son ancien id dans le tableau temporaire
-//							usedVertices[usedVerticesCount++] = oldVertexIds[localVertexId];
-							
 							usedVerticesDic[oldVertexIds[localVertexId]] = usedVerticesCount++;
 						}
 						
