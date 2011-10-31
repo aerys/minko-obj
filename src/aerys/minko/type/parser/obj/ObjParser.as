@@ -28,7 +28,7 @@ package aerys.minko.type.parser.obj
 	{
 		private static const INDEX_LIMIT				: uint						= 524270;
 		private static const VERTEX_LIMIT				: uint						= 65535;
-		private static const MERGE_DUPLICATED_VERTICES	: Boolean					= false;
+		private static const MERGE_DUPLICATED_VERTICES	: Boolean					= true;
 		private static const TMP_BUFFER					: Vector.<Vector.<uint>>	= new Vector.<Vector.<uint>>(3);
 		
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
@@ -389,10 +389,10 @@ package aerys.minko.type.parser.obj
 					
 					for (var i : uint = 0; i < meshsCount; ++i)
 					{
-						if (meshs[i] != null)
+						if (meshs[i] != null && meshs[i].vertexStream.length != 0 && meshs[i].indexStream.length != 0)
 							meshs[i] = _options.replaceNodeFunction(meshs[i]);
 					
-						if (meshs[i] != null)
+						if (meshs[i] != null && meshs[i].vertexStream.length != 0 && meshs[i].indexStream.length != 0)
 							group.addChild(meshs[i]);
 					}
 				}
@@ -426,13 +426,13 @@ package aerys.minko.type.parser.obj
 				vertexFormat.addComponent(VertexComponent.UV);
 			}
 			
-			if (normalsCounts != 0)
-			{
-				if (normalsCounts != numIndices)
-					throw new Error('Invalid OBJ file');
-				
-				vertexFormat.addComponent(VertexComponent.NORMAL);
-			}
+//			if (normalsCounts != 0)
+//			{
+//				if (normalsCounts != numIndices)
+//					throw new Error('Invalid OBJ file');
+//				
+//				vertexFormat.addComponent(VertexComponent.NORMAL);
+//			}
 			
 			return vertexFormat;
 		}
