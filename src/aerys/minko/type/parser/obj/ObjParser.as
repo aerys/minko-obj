@@ -28,7 +28,6 @@ package aerys.minko.type.parser.obj
 	{
 		private static const INDEX_LIMIT				: uint						= 524270;
 		private static const VERTEX_LIMIT				: uint						= 65535;
-		private static const MERGE_DUPLICATED_VERTICES	: Boolean					= true;
 		private static const TMP_BUFFER					: Vector.<Vector.<uint>>	= new Vector.<Vector.<uint>>(3);
 		
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
@@ -426,7 +425,6 @@ package aerys.minko.type.parser.obj
 				vertexFormat.addComponent(VertexComponent.UV);
 			}
 			
-<<<<<<< HEAD
 //			if (normalsCounts != 0)
 //			{
 //				if (normalsCounts != numIndices)
@@ -434,15 +432,6 @@ package aerys.minko.type.parser.obj
 //				
 //				vertexFormat.addComponent(VertexComponent.NORMAL);
 //			}
-=======
-			/*if (normalsCounts != 0)
-			{
-				if (normalsCounts != numIndices)
-					throw new Error('Invalid OBJ file');
-				
-				vertexFormat.addComponent(VertexComponent.NORMAL);
-			}*/
->>>>>>> 4b6023ccd031897f41eed50a6e8e97bd79090666
 			
 			return vertexFormat;
 		}
@@ -504,7 +493,6 @@ package aerys.minko.type.parser.obj
 			var dwordsPerVertex			: uint					= 3 + 2 * uint(useUVs) + 3 * uint(useNormals);
 			
 			var vertexIndex				: uint;
-
 			var verticesToIndex			: Object				= new Object();
 			
 			var tmpVertex				: Vector.<Number>		= new Vector.<Number>();
@@ -550,29 +538,19 @@ package aerys.minko.type.parser.obj
 					tmpVertex[tmpVertexComponentId++] = _normals[int(normalIndex + 2)];
 				}
 				
-				if (MERGE_DUPLICATED_VERTICES)
-				{
-					var joinedVertex	: String	= tmpVertex.join('|');
-					
-					if (!verticesToIndex.hasOwnProperty(joinedVertex))
-					{
-						for (tmpVertexComponentId = 0; tmpVertexComponentId < tmpVertexDwords; ++tmpVertexComponentId)
-							vertexData.push(tmpVertex[tmpVertexComponentId]);
-					
-						verticesToIndex[joinedVertex] = vertexIndex = currentNumVertices++;
-					}
-					else
-					{
-						vertexIndex = verticesToIndex[joinedVertex];
-					}
-					indexData.push(vertexIndex);
-				}
-				else
+				var joinedVertex	: String	= tmpVertex.join('|');
+				if (!verticesToIndex.hasOwnProperty(joinedVertex))
 				{
 					for (tmpVertexComponentId = 0; tmpVertexComponentId < tmpVertexDwords; ++tmpVertexComponentId)
 						vertexData.push(tmpVertex[tmpVertexComponentId]);
-					indexData.push(currentNumVertices++);
+				
+					verticesToIndex[joinedVertex] = vertexIndex = currentNumVertices++;
 				}
+				else
+				{
+					vertexIndex = verticesToIndex[joinedVertex];
+				}
+				indexData.push(vertexIndex);
 			}
 		}
 		
