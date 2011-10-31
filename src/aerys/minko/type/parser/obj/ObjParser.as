@@ -74,8 +74,8 @@ package aerys.minko.type.parser.obj
 		public function parse(data		: ByteArray, 
 							  options	: ParserOptions) : Boolean
 		{
-//			try
-//			{
+			try
+			{
 				_options = options;
 				reset();
 				
@@ -89,11 +89,11 @@ package aerys.minko.type.parser.obj
 				dispatchEvent(new Event(Event.COMPLETE));
 				
 				return true;
-//			}
-//			catch (e : Error)
-//			{
-//			}
-//			return false;
+			}
+			catch (e : Error)
+			{
+			}
+			return false;
 		}
 		
 		private function reset() : void
@@ -426,6 +426,7 @@ package aerys.minko.type.parser.obj
 				vertexFormat.addComponent(VertexComponent.UV);
 			}
 			
+<<<<<<< HEAD
 //			if (normalsCounts != 0)
 //			{
 //				if (normalsCounts != numIndices)
@@ -433,6 +434,15 @@ package aerys.minko.type.parser.obj
 //				
 //				vertexFormat.addComponent(VertexComponent.NORMAL);
 //			}
+=======
+			/*if (normalsCounts != 0)
+			{
+				if (normalsCounts != numIndices)
+					throw new Error('Invalid OBJ file');
+				
+				vertexFormat.addComponent(VertexComponent.NORMAL);
+			}*/
+>>>>>>> 4b6023ccd031897f41eed50a6e8e97bd79090666
 			
 			return vertexFormat;
 		}
@@ -445,6 +455,8 @@ package aerys.minko.type.parser.obj
 			
 			var t1 : uint = getTimer();
 			fillBuffers(meshId, format, indexBuffer, vertexBuffer);
+			
+			
 			trace('buffer filling for mesh', meshId, ':', getTimer() - t1);
 			
 			var result			: Vector.<IMesh>	= new Vector.<IMesh>();
