@@ -1,7 +1,6 @@
 package aerys.minko.type.parser.obj
 {
 	import aerys.minko.scene.node.IScene;
-	import aerys.minko.scene.node.group.IGroup;
 	import aerys.minko.scene.node.group.StyleGroup;
 	import aerys.minko.scene.node.mesh.IMesh;
 	import aerys.minko.scene.node.mesh.Mesh;
@@ -447,17 +446,14 @@ package aerys.minko.type.parser.obj
 			fillBuffers(meshId, format, indexBuffer, vertexBuffer);
 			
 			
-			trace('buffer filling for mesh', meshId, ':', getTimer() - t1);
-			
 			var result			: Vector.<IMesh>	= new Vector.<IMesh>();
 			var indexStream		: IndexStream;
 			var vertexStream	: VertexStream;
 			
 			if (indexBuffer.length < INDEX_LIMIT && vertexBuffer.length / format.dwordsPerVertex < VERTEX_LIMIT)
 			{
-				trace('no splitting needed for mesh', meshId);
-				indexStream		= new IndexStream(indexBuffer, 0, _options.keepStreamsDynamic);
-				vertexStream	= new VertexStream(vertexBuffer, format, _options.keepStreamsDynamic);
+				indexStream		= new IndexStream(_options.defaultIndexStreamUsage, indexBuffer, 0);
+				vertexStream	= new VertexStream(_options.defaultVertexStreamUsage, format, vertexBuffer);
 				
 				result.push(new Mesh(vertexStream, indexStream));
 			}
@@ -469,16 +465,24 @@ package aerys.minko.type.parser.obj
 				
 				splitBuffers(indexBuffer, vertexBuffer, format, indexBuffers, vertexBuffers);
 				
-				var numMeshes		: uint						= indexBuffers.length;
+				var numMeshes	: uint	= indexBuffers.length;
 				
 				for (var i : uint = 0; i < numMeshes; ++i)
 				{
-					indexStream		= new IndexStream(indexBuffers[i], 0, _options.keepStreamsDynamic);
-					vertexStream	= new VertexStream(vertexBuffers[i], format, _options.keepStreamsDynamic);
+					indexStream	= new IndexStream(
+						_options.defaultIndexStreamUsage,
+						indexBuffers[i],
+						0
+					);
+					
+					vertexStream = new VertexStream(
+						_options.defaultVertexStreamUsage,
+						format,
+						vertexBuffers[i]
+					);
 					
 					result.push(new Mesh(vertexStream, indexStream));
 				}
-				trace('buffer splitting for mesh ', meshId, ':', getTimer() - t2);
 			}
 			
 			return result;
