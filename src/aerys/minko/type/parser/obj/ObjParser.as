@@ -1,9 +1,11 @@
 package aerys.minko.type.parser.obj
 {
+	import aerys.minko.Minko;
 	import aerys.minko.scene.node.IScene;
 	import aerys.minko.scene.node.group.StyleGroup;
 	import aerys.minko.scene.node.mesh.IMesh;
 	import aerys.minko.scene.node.mesh.Mesh;
+	import aerys.minko.type.log.DebugLevel;
 	import aerys.minko.type.parser.IParser;
 	import aerys.minko.type.parser.ParserOptions;
 	import aerys.minko.type.stream.IndexStream;
@@ -79,11 +81,10 @@ package aerys.minko.type.parser.obj
 				
 				var t : uint = getTimer();
 				readData(data);
-				trace('vertices and indexes parsing:', getTimer() - t);
+				Minko.log(DebugLevel.PLUGIN_NOTICE, 'obj: vertices and indexes parsing:' + (getTimer() - t).toString());
 				
 				createGroups();
 				
-				trace('--------------------');
 				dispatchEvent(new Event(Event.COMPLETE));
 				
 				return true;
