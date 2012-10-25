@@ -87,9 +87,9 @@ package aerys.minko.type.parser.obj
 			for each (var mtl : String in _document.MtlFiles)
 			{
 				var loader		: ILoader	= _options.dependencyLoaderFunction(mtl, false, _options);
-				loader.complete.add(onMtlCompleteHandler);
 				if (loader)
 				{
+					loader.complete.add(onMtlCompleteHandler);
 					dependencies.push(loader);
 				}
 			}
