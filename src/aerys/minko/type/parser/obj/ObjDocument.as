@@ -19,6 +19,8 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.type.log.DebugLevel;
 	import aerys.minko.type.math.Frustum;
 	
+	import avmplus.USE_ITRAITS;
+	
 	import flash.net.URLRequest;
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
@@ -195,7 +197,8 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					default:
-						throw new ObjError('Line ' + _currentLine + ': unknown definition, found ' + char);
+						gotoNextLine(data); // we ignore smoothing group instructions
+						break;
 				}
 			}
 		}
@@ -427,11 +430,11 @@ package aerys.minko.type.parser.obj
 						group.addChild(meshs[i]);
 					}
 				}
-			}
 				
-			if (group != null)
-			{
-				result.addChild(group);
+				if (group != null)
+				{
+					result.addChild(group);
+				}
 			}
 				
 			return result;
@@ -511,7 +514,6 @@ package aerys.minko.type.parser.obj
 				}
 				
 				mesh = new Mesh(geometry, material, "");
-				mesh.frustumCulling = FrustumCulling.DISABLED;
 				result.push(mesh);
 			}
 			else
@@ -536,7 +538,7 @@ package aerys.minko.type.parser.obj
 					vertexStreams = new Vector.<IVertexStream>(1);
 					vertexStreams[0] = vertexStream;
 					geometry = new Geometry(vertexStreams, indexStream);
-					material = new BasicMaterial();				
+					material = new BasicMaterial();
 					if (matDef)
 					{
 						material.alphaThreshold = matDef.alpha;
@@ -548,7 +550,6 @@ package aerys.minko.type.parser.obj
 					}
 					
 					mesh = new Mesh(geometry, material, "");
-					mesh.frustumCulling = FrustumCulling.DISABLED;
 					result.push(mesh);
 				}
 			}

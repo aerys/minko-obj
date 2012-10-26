@@ -23,9 +23,9 @@ package aerys.minko.type.parser.obj
 		public function ObjParser(options : ParserOptions)
 		{
 			_options			= options || new ParserOptions();
-			_progress			= new Signal('ColladaParser.progress');
-			_complete			= new Signal('ColladaParser.complete');
-			_error				= new Signal('ColladaParser.error');
+			_progress			= new Signal('ObjParser.progress');
+			_complete			= new Signal('ObjParser.complete');
+			_error				= new Signal('ObjParser.error');
 			_loaderToDependency	= new Dictionary();
 			_document			= new ObjDocument();
 		}

@@ -89,7 +89,8 @@ package aerys.minko.type.parser.obj
 						}
 						else
 						{
-							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "newmtl"?');
+							gotoNextLine(data); // we ignore smoothing group instructions
+//							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "newmtl"?');
 						}
 						
 						break;
@@ -180,7 +181,7 @@ package aerys.minko.type.parser.obj
 						}
 						else
 						{
-							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "map_"?');
+							gotoNextLine(data);
 						}
 						
 						break;
@@ -198,7 +199,8 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					default:
-						throw new ObjError('Line ' + _currentLine + ': unknown definition, found ' + char);
+						gotoNextLine(data); // we ignore smoothing group instructions
+						break;
 				}
 			}
 		}
