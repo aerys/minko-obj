@@ -125,12 +125,27 @@ package aerys.minko.type.parser.obj
 				if (material.diffuseMapRef)
 				{
 					var loader : ILoader = _parserOptions.dependencyLoaderFunction(material.diffuseMapRef, true, _parserOptions);
-					_loaderToMaterial[loader] = material;
-					_dependencyCounter += 1;
-					loader.complete.add(diffuseMapCompleteHandler);
+					if (loader)
+					{
+						_loaderToMaterial[loader] = material;
+						_dependencyCounter += 1;
+						loader.complete.add(diffuseMapCompleteHandler);
+						loader.error.add(diffuseMapErrorHandler);
+					}
 				}
 			}
 			
+			if (_dependencyCounter == 0)
+			{
+				_complete.execute(this, _document);
+			}
+		}
+		
+		private function diffuseMapErrorHandler(loader			: ILoader,
+												errorCode		: uint,
+												errorText		: String) : void
+		{
+			_dependencyCounter -= 1;
 			if (_dependencyCounter == 0)
 			{
 				_complete.execute(this, _document);

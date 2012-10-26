@@ -11,19 +11,11 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.render.material.basic.BasicMaterial;
 	import aerys.minko.scene.node.Group;
 	import aerys.minko.scene.node.Mesh;
-	import aerys.minko.type.enum.FrustumCulling;
-	import aerys.minko.type.enum.TriangleCulling;
 	import aerys.minko.type.error.obj.ObjError;
-	import aerys.minko.type.loader.ILoader;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
-	import aerys.minko.type.math.Frustum;
 	
-	import avmplus.USE_ITRAITS;
-	
-	import flash.net.URLRequest;
 	import flash.utils.ByteArray;
-	import flash.utils.Dictionary;
 	import flash.utils.Endian;
 	import flash.utils.getTimer;
 
@@ -506,7 +498,10 @@ package aerys.minko.type.parser.obj
 				if (matDef)
 				{
 					material.alphaThreshold = matDef.alpha;
-					material.diffuseMap = matDef.diffuseMap;
+					if (matDef.diffuseMapRef && matDef.diffuseMap)
+					{
+						material.diffuseMap = matDef.diffuseMap;
+					}
 					color = (matDef.diffuseR * 255);
 					color = (color << 8) + (matDef.diffuseG);
 					color = (color << 8) + (matDef.diffuseB);
@@ -542,7 +537,10 @@ package aerys.minko.type.parser.obj
 					if (matDef)
 					{
 						material.alphaThreshold = matDef.alpha;
-						material.diffuseMap = matDef.diffuseMap;
+						if (matDef.diffuseMapRef && matDef.diffuseMap)
+						{
+							material.diffuseMap = matDef.diffuseMap;
+						}
 						color = (matDef.diffuseR * 255);
 						color = (color << 8) + (matDef.diffuseG);
 						color = (color << 8) + (matDef.diffuseB);
