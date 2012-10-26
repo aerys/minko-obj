@@ -16,7 +16,7 @@ package aerys.minko.type.parser.obj
 		public var specularG		: Number;
 		public var specularB		: Number;
 		
-		public var alpha			: Number;
+		public var alpha			: Number		= 1.;
 		
 		public var shininess		: Number;
 		
