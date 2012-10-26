@@ -299,8 +299,6 @@ package aerys.minko.type.parser.obj
 			
 			_currentMaterial = new ObjMaterial();
 			_materials[matName] = _currentMaterial;
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseAmbient(data : ByteArray) : void
@@ -400,8 +398,6 @@ package aerys.minko.type.parser.obj
 			}
 
 			_currentMaterial.diffuseMapRef = mapName;
-			
-			gotoNextLine(data);
 		}
 	}
 }
