@@ -11,9 +11,12 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.render.material.basic.BasicMaterial;
 	import aerys.minko.scene.node.Group;
 	import aerys.minko.scene.node.Mesh;
+	import aerys.minko.type.enum.FrustumCulling;
+	import aerys.minko.type.enum.TriangleCulling;
 	import aerys.minko.type.error.obj.ObjError;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
+	import aerys.minko.type.math.HLSAMatrix4x4;
 	
 	import flash.utils.ByteArray;
 	import flash.utils.Endian;
@@ -189,7 +192,6 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					default:
-						gotoNextLine(data); // we ignore smoothing group instructions
 						break;
 				}
 			}
@@ -225,18 +227,15 @@ package aerys.minko.type.parser.obj
 				if (char != '\r')
 					matName += char;
 			}
-			
-			var materialId : int = _groupNames.indexOf(matName);
-			if (materialId == -1)
-			{
-				materialId = _groupNames.length;
+
+			var materialId : uint = materialId = _groupNames.length;
 				
-				_groupNames.push(matName)
-				_groupFacesPositions.push(new Vector.<uint>());
-				_groupFacesUvs.push(new Vector.<uint>());
-				_groupFacesNormals.push(new Vector.<uint>());
-			}
+			_groupNames.push(matName)
+			_groupFacesPositions.push(new Vector.<uint>());
+			_groupFacesUvs.push(new Vector.<uint>());
+			_groupFacesNormals.push(new Vector.<uint>());
 			++_currentLine;
+
 			return materialId;
 		}
 		
@@ -497,14 +496,14 @@ package aerys.minko.type.parser.obj
 				material = new BasicMaterial();
 				if (matDef)
 				{
-					material.alphaThreshold = matDef.alpha;
+					material.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
 					{
 						material.diffuseMap = matDef.diffuseMap;
 					}
 					color = (matDef.diffuseR * 255);
-					color = (color << 8) + (matDef.diffuseG);
-					color = (color << 8) + (matDef.diffuseB);
+					color = (color << 8) + (matDef.diffuseG * 255);
+					color = (color << 8) + (matDef.diffuseB * 255);
 					material.diffuseColor = color;
 				}
 				
@@ -536,14 +535,14 @@ package aerys.minko.type.parser.obj
 					material = new BasicMaterial();
 					if (matDef)
 					{
-						material.alphaThreshold = matDef.alpha;
+						material.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
 						if (matDef.diffuseMapRef && matDef.diffuseMap)
 						{
 							material.diffuseMap = matDef.diffuseMap;
 						}
 						color = (matDef.diffuseR * 255);
-						color = (color << 8) + (matDef.diffuseG);
-						color = (color << 8) + (matDef.diffuseB);
+						color = (color << 8) + (matDef.diffuseG * 255);
+						color = (color << 8) + (matDef.diffuseB * 255);
 						material.diffuseColor = color;
 					}
 					

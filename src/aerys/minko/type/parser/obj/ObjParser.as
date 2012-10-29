@@ -1,6 +1,5 @@
 package aerys.minko.type.parser.obj
 {
-	import aerys.minko.scene.node.Group;
 	import aerys.minko.type.Signal;
 	import aerys.minko.type.loader.ILoader;
 	import aerys.minko.type.loader.parser.IParser;
