@@ -16,6 +16,7 @@ package aerys.minko.type.parser.obj
 	import flash.net.URLLoaderDataFormat;
 	import flash.net.URLRequest;
 	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
 	
 	public final class MtlLoader implements ILoader
 	{
@@ -25,7 +26,7 @@ package aerys.minko.type.parser.obj
 		private var _isComplete					: Boolean;
 		private var _document					: MtlDocument;
 		private var _parserOptions				: ParserOptions;
-		private var _loaderToMaterial			: Object;
+		private var _loaderToMaterial			: Dictionary;
 		private var _dependencyCounter			: uint;
 		
 		public function MtlLoader(parserOptions : ParserOptions)
@@ -39,7 +40,7 @@ package aerys.minko.type.parser.obj
 			
 			_document			= new MtlDocument();
 			
-			_loaderToMaterial	= new Object();
+			_loaderToMaterial	= new Dictionary();
 			
 			_dependencyCounter	= 0;
 		}

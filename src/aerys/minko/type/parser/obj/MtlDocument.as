@@ -2,11 +2,9 @@ package aerys.minko.type.parser.obj
 {
 	import aerys.minko.Minko;
 	import aerys.minko.type.error.obj.ObjError;
-	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
 	
 	import flash.utils.ByteArray;
-	import flash.utils.Dictionary;
 	import flash.utils.getTimer;
 
 	public final class MtlDocument
@@ -89,8 +87,7 @@ package aerys.minko.type.parser.obj
 						}
 						else
 						{
-							gotoNextLine(data); // we ignore smoothing group instructions
-//							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "newmtl"?');
+							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "newmtl"?');
 						}
 						
 						break;
@@ -113,7 +110,7 @@ package aerys.minko.type.parser.obj
 								eatSpaces(data);
 								parseSpecular(data);
 								break;
-							case 0x65:
+							case 0x65: // 'e'
 								gotoNextLine(data);
 								break;
 							default:
@@ -188,9 +185,8 @@ package aerys.minko.type.parser.obj
 					}
 						
 					case 35: // "#"
-					case 0x73: // "s"
 					case 0x0d: // "\r"
-						gotoNextLine(data); // we ignore smoothing group instructions
+						gotoNextLine(data);
 						break;
 					
 					case 0x0a: // "\n"
@@ -274,7 +270,7 @@ package aerys.minko.type.parser.obj
 					}
 				}
 				
-				destination.push(isPositive * currentDigits * TEN_POWERS[decimalOpPower]);
+				destination[i] = isPositive * currentDigits * TEN_POWERS[decimalOpPower];
 			}
 			
 			if (!eolReached)
@@ -325,8 +321,6 @@ package aerys.minko.type.parser.obj
 			_currentMaterial.diffuseR = FLOAT_CONTAINER[0];
 			_currentMaterial.diffuseG = FLOAT_CONTAINER[1];
 			_currentMaterial.diffuseB = FLOAT_CONTAINER[2];
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseSpecular(data : ByteArray) : void
@@ -351,8 +345,6 @@ package aerys.minko.type.parser.obj
 			}
 			
 			_currentMaterial.alpha = FLOAT_CONTAINER[0];
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseShininess(data : ByteArray) : void
@@ -364,8 +356,6 @@ package aerys.minko.type.parser.obj
 			}
 			
 			_currentMaterial.shininess = FLOAT_CONTAINER[0];
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseIllumination(data : ByteArray) : void
@@ -377,8 +367,6 @@ package aerys.minko.type.parser.obj
 			}
 			
 			_currentMaterial.illumination = FLOAT_CONTAINER[0];
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseDiffuseMap(data : ByteArray) : void
