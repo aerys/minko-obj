@@ -116,22 +116,30 @@ package aerys.minko.type.parser.obj
 			
 			_document.fromMtlFile(bytes);
 			
-			for each (var material : ObjMaterial in _document.materials)
+			for each (var material : ObjMaterialDefinition in _document.materials)
 			{
 				if (!material)
 				{
 					continue;
 				}
 				
-				if (material.diffuseMapRef)
+				for each (var mapRef : Object in [
+					{ref : material.diffuseMapRef, callback : diffuseMapCompleteHandler},
+					{ref : material.specularMapRef, callback : specularMapCompleteHandler},
+					{ref : material.normalMapRef, callback : normalMapCompleteHandler},
+					{ref : material.alphaMapRef, callback : alphaMapCompleteHandler}
+				])
 				{
-					var loader : ILoader = _parserOptions.dependencyLoaderFunction(material.diffuseMapRef, true, _parserOptions);
-					if (loader)
+					if (mapRef.ref && mapRef.callback)
 					{
-						_loaderToMaterial[loader] = material;
-						_dependencyCounter += 1;
-						loader.complete.add(diffuseMapCompleteHandler);
-						loader.error.add(diffuseMapErrorHandler);
+						var loader : ILoader = _parserOptions.dependencyLoaderFunction(mapRef.ref, true, _parserOptions);
+						if (loader)
+						{
+							_loaderToMaterial[loader] = material;
+							_dependencyCounter += 1;
+							loader.complete.add(mapRef.callback);
+							loader.error.add(mapErrorHandler);
+						}
 					}
 				}
 			}
@@ -142,7 +150,7 @@ package aerys.minko.type.parser.obj
 			}
 		}
 		
-		private function diffuseMapErrorHandler(loader			: ILoader,
+		private function mapErrorHandler(loader			: ILoader,
 												errorCode		: uint,
 												errorText		: String) : void
 		{
@@ -156,11 +164,62 @@ package aerys.minko.type.parser.obj
 		private function diffuseMapCompleteHandler(loader		: ILoader,
 												   texture		: TextureResource) : void
 		{
-			var material : ObjMaterial = _loaderToMaterial[loader];
+			var material : ObjMaterialDefinition = _loaderToMaterial[loader];
 			
 			if (material)
 			{
 				material.diffuseMap = texture;
+			}
+			
+			_dependencyCounter -= 1;
+			if (_dependencyCounter == 0)
+			{
+				_complete.execute(this, _document);
+			}
+		}
+		
+		private function specularMapCompleteHandler(loader		: ILoader,
+												   texture		: TextureResource) : void
+		{
+			var material : ObjMaterialDefinition = _loaderToMaterial[loader];
+			
+			if (material)
+			{
+				material.specularMap = texture;
+			}
+			
+			_dependencyCounter -= 1;
+			if (_dependencyCounter == 0)
+			{
+				_complete.execute(this, _document);
+			}
+		}
+		
+		private function alphaMapCompleteHandler(loader		: ILoader,
+												   texture		: TextureResource) : void
+		{
+			var material : ObjMaterialDefinition = _loaderToMaterial[loader];
+			
+			if (material)
+			{
+				material.alphaMask = texture;
+			}
+			
+			_dependencyCounter -= 1;
+			if (_dependencyCounter == 0)
+			{
+				_complete.execute(this, _document);
+			}
+		}
+		
+		private function normalMapCompleteHandler(loader		: ILoader,
+												   texture		: TextureResource) : void
+		{
+			var material : ObjMaterialDefinition = _loaderToMaterial[loader];
+			
+			if (material)
+			{
+				material.normalMap = texture;
 			}
 			
 			_dependencyCounter -= 1;

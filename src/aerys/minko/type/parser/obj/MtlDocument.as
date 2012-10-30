@@ -22,7 +22,7 @@ package aerys.minko.type.parser.obj
 		
 		private var _materials							: Object;
 		private var _currentMaterialName				: String;
-		private var _currentMaterial					: ObjMaterial;
+		private var _currentMaterial					: ObjMaterialDefinition;
 		
 		public function MtlDocument()
 		{
@@ -163,7 +163,8 @@ package aerys.minko.type.parser.obj
 						
 					case 0x6d: //'m'
 					{
-						if (data.readUTFBytes(4) == 'ap_K')
+						var utfBytes : String = data.readUTFBytes(4);
+						if (utfBytes == 'ap_K')
 						{
 							secondChar = data.readUnsignedByte();
 							if (secondChar == 0x64) //'d'
@@ -171,14 +172,24 @@ package aerys.minko.type.parser.obj
 								eatSpaces(data);
 								parseDiffuseMap(data);
 							}
-							else
+							else if (secondChar == 0x73)
 							{
-								gotoNextLine(data);
+								eatSpaces(data);
+								parseSpecularMap(data);
 							}
 						}
-						else
+						else if (utfBytes == 'ap_d')
 						{
-							gotoNextLine(data);
+							eatSpaces(data);
+							parseAlphaMap(data);
+						}
+						else if (utfBytes == 'ap_b')
+						{
+							if (data.readUTFBytes(3) == 'ump')
+							{
+								eatSpaces(data);
+								parseNormalMap(data);
+							}
 						}
 						
 						break;
@@ -293,7 +304,7 @@ package aerys.minko.type.parser.obj
 				throw new ObjError('Line ' + _currentLine + ': material redefinition');
 			}
 			
-			_currentMaterial = new ObjMaterial();
+			_currentMaterial = new ObjMaterialDefinition();
 			_materials[matName] = _currentMaterial;
 		}
 		
@@ -386,6 +397,63 @@ package aerys.minko.type.parser.obj
 			}
 
 			_currentMaterial.diffuseMapRef = mapName;
+		}
+		
+		private function parseSpecularMap(data : ByteArray) : void
+		{
+			var mapName	: String = "";
+			var char	: String;
+			
+			while ((char = data.readUTFBytes(1)) != '\n')
+			{
+				if (char != '\r')
+					mapName += char;
+			}
+			
+			if (_currentMaterial == null)
+			{
+				throw new ObjError('Line ' + _currentLine + ': no material found');
+			}
+
+			_currentMaterial.specularMapRef = mapName;
+		}
+		
+		private function parseAlphaMap(data : ByteArray) : void
+		{
+			var mapName	: String = "";
+			var char	: String;
+			
+			while ((char = data.readUTFBytes(1)) != '\n')
+			{
+				if (char != '\r')
+					mapName += char;
+			}
+			
+			if (_currentMaterial == null)
+			{
+				throw new ObjError('Line ' + _currentLine + ': no material found');
+			}
+
+			_currentMaterial.alphaMapRef = mapName;
+		}
+		
+		private function parseNormalMap(data : ByteArray) : void
+		{
+			var mapName	: String = "";
+			var char	: String;
+			
+			while ((char = data.readUTFBytes(1)) != '\n')
+			{
+				if (char != '\r')
+					mapName += char;
+			}
+			
+			if (_currentMaterial == null)
+			{
+				throw new ObjError('Line ' + _currentLine + ': no material found');
+			}
+
+			_currentMaterial.normalMapRef = mapName;
 		}
 	}
 }
