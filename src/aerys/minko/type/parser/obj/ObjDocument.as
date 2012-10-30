@@ -8,6 +8,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.render.geometry.stream.VertexStream;
 	import aerys.minko.render.geometry.stream.format.VertexComponent;
 	import aerys.minko.render.geometry.stream.format.VertexFormat;
+	import aerys.minko.render.material.Material;
 	import aerys.minko.render.material.basic.BasicMaterial;
 	import aerys.minko.scene.node.Group;
 	import aerys.minko.scene.node.Mesh;
@@ -408,7 +409,7 @@ package aerys.minko.type.parser.obj
 				group.name = _groupNames[meshId];
 				if (mtlDoc)
 				{
-					var matDef : ObjMaterial = mtlDoc.materials[group.name];
+					var matDef : ObjMaterialDefinition = mtlDoc.materials[group.name];
 				}
 
 				var meshs		: Vector.<Mesh>	= createMeshs(meshId, matDef);
@@ -465,7 +466,7 @@ package aerys.minko.type.parser.obj
 		}
 		
 		private function createMeshs(meshId			: uint,
-									 matDef			: ObjMaterial) : Vector.<Mesh>
+									 matDef			: ObjMaterialDefinition) : Vector.<Mesh>
 		{
 			var format			: VertexFormat		= createVertexFormat(meshId);
 			var indexBuffer		: Vector.<uint>		= new Vector.<uint>();
@@ -479,7 +480,8 @@ package aerys.minko.type.parser.obj
 			var vertexStream	: VertexStream;
 			var vertexStreams 	: Vector.<IVertexStream>;
 			var geometry		: Geometry;
-			var material		: BasicMaterial;
+			var material		: Material;
+			var properties		: Object;
 			var mesh			: Mesh;
 			var color			: uint = 0;
 			
@@ -493,21 +495,34 @@ package aerys.minko.type.parser.obj
 				vertexStreams = new Vector.<IVertexStream>(1);
 				vertexStreams[0] = vertexStream;
 				geometry = new Geometry(vertexStreams, indexStream);
-				material = new BasicMaterial();
+				properties = new Object();
 				if (matDef)
 				{
-					material.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
+					properties.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
 					{
-						material.diffuseMap = matDef.diffuseMap;
+						properties.diffuseMap = matDef.diffuseMap;
+					}
+					if (matDef.specularMapRef && matDef.specularMap)
+					{
+						properties.specularMap = matDef.specularMap;
+					}
+					if (matDef.normalMapRef && matDef.normalMap)
+					{
+						properties.lightNormalMap = matDef.normalMap;
+					}
+					if (matDef.alphaMapRef && matDef.alphaMask)
+					{
+						properties.alphaMap = matDef.alphaMask;
 					}
 					color = (matDef.diffuseR * 255);
 					color = (color << 8) + (matDef.diffuseG * 255);
 					color = (color << 8) + (matDef.diffuseB * 255);
-					material.diffuseColor = color;
+					properties.diffuseColor = color;
 				}
 				
-				mesh = new Mesh(geometry, material, "");
+				material = new Material(_options.effect, properties, _groupNames[meshId] + "Material");
+				mesh = new Mesh(geometry, material, _groupNames[meshId]);
 				result.push(mesh);
 			}
 			else
@@ -532,20 +547,33 @@ package aerys.minko.type.parser.obj
 					vertexStreams = new Vector.<IVertexStream>(1);
 					vertexStreams[0] = vertexStream;
 					geometry = new Geometry(vertexStreams, indexStream);
-					material = new BasicMaterial();
+					properties = new Object();
 					if (matDef)
 					{
-						material.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
+						properties.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
 						if (matDef.diffuseMapRef && matDef.diffuseMap)
 						{
-							material.diffuseMap = matDef.diffuseMap;
+							properties.diffuseMap = matDef.diffuseMap;
+						}
+						if (matDef.specularMapRef && matDef.specularMap)
+						{
+							properties.specularMap = matDef.specularMap;
+						}
+						if (matDef.normalMapRef && matDef.normalMap)
+						{
+							properties.normalMap = matDef.normalMap;
+						}
+						if (matDef.alphaMapRef && matDef.alphaMask)
+						{
+							properties.alphaMap = matDef.alphaMask;
 						}
 						color = (matDef.diffuseR * 255);
 						color = (color << 8) + (matDef.diffuseG * 255);
 						color = (color << 8) + (matDef.diffuseB * 255);
-						material.diffuseColor = color;
+						properties.diffuseColor = color;
 					}
 					
+					material = new Material(_options.effect, properties, _groupNames[meshId] + "Material");
 					mesh = new Mesh(geometry, material, "");
 					result.push(mesh);
 				}
