@@ -202,7 +202,7 @@ package aerys.minko.type.parser.obj
 			
 			if (material)
 			{
-				material.alphaMask = texture;
+				material.alphaMap = texture;
 			}
 			
 			_dependencyCounter -= 1;

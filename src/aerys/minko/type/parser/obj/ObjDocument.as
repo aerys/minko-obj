@@ -9,11 +9,10 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.render.geometry.stream.format.VertexComponent;
 	import aerys.minko.render.geometry.stream.format.VertexFormat;
 	import aerys.minko.render.material.Material;
-	import aerys.minko.render.material.basic.BasicMaterial;
+	import aerys.minko.render.material.basic.BasicProperties;
+	import aerys.minko.render.material.phong.PhongProperties;
 	import aerys.minko.scene.node.Group;
 	import aerys.minko.scene.node.Mesh;
-	import aerys.minko.type.enum.FrustumCulling;
-	import aerys.minko.type.enum.TriangleCulling;
 	import aerys.minko.type.error.obj.ObjError;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
@@ -179,7 +178,7 @@ package aerys.minko.type.parser.obj
 					case 0x6d: // "m"
 						if (data.readUTFBytes(5) != 'tllib')
 							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "mtllib"?');
-						
+						eatSpaces(data);
 						parseMtllib(data); // we ignore mtllib instructions
 						break;
 					
@@ -495,33 +494,36 @@ package aerys.minko.type.parser.obj
 				vertexStreams = new Vector.<IVertexStream>(1);
 				vertexStreams[0] = vertexStream;
 				geometry = new Geometry(vertexStreams, indexStream);
-				properties = new Object();
+				material = new Material(_options.effect, _groupNames[meshId] + "Material");
 				if (matDef)
 				{
-					properties.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
+					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, new HLSAMatrix4x4(.0, 1., 1., matDef.alpha));
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
 					{
-						properties.diffuseMap = matDef.diffuseMap;
+						material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
 					}
 					if (matDef.specularMapRef && matDef.specularMap)
 					{
-						properties.specularMap = matDef.specularMap;
+						material.setProperty(PhongProperties.SPECULAR_MAP, matDef.specularMap);
 					}
 					if (matDef.normalMapRef && matDef.normalMap)
 					{
-						properties.lightNormalMap = matDef.normalMap;
+						material.setProperty(PhongProperties.NORMAL_MAP, matDef.normalMap);
 					}
-					if (matDef.alphaMapRef && matDef.alphaMask)
+					if (matDef.alphaMapRef && matDef.alphaMap)
 					{
-						properties.alphaMap = matDef.alphaMask;
+						material.setProperty(BasicProperties.ALPHA_MAP, matDef.alphaMap);
 					}
-					color = (matDef.diffuseR * 255);
-					color = (color << 8) + (matDef.diffuseG * 255);
-					color = (color << 8) + (matDef.diffuseB * 255);
-					properties.diffuseColor = color;
+					
+					if (matDef.diffuseB != 1 && matDef.diffuseG != 1 && matDef.diffuseR != 1)
+					{
+						color = (matDef.diffuseR * 255);
+						color = (color << 8) + (matDef.diffuseG * 255);
+						color = (color << 8) + (matDef.diffuseB * 255);
+						material.setProperty(BasicProperties.DIFFUSE_MAP_MULTIPLIER, color);
+					}
 				}
 				
-				material = new Material(_options.effect, properties, _groupNames[meshId] + "Material");
 				mesh = new Mesh(geometry, material, _groupNames[meshId]);
 				result.push(mesh);
 			}
@@ -547,33 +549,36 @@ package aerys.minko.type.parser.obj
 					vertexStreams = new Vector.<IVertexStream>(1);
 					vertexStreams[0] = vertexStream;
 					geometry = new Geometry(vertexStreams, indexStream);
-					properties = new Object();
+					material = new Material(_options.effect, _groupNames[meshId] + "Material");
 					if (matDef)
 					{
-						properties.diffuseTransform = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
+						material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, new HLSAMatrix4x4(.0, 1., 1., matDef.alpha));
 						if (matDef.diffuseMapRef && matDef.diffuseMap)
 						{
-							properties.diffuseMap = matDef.diffuseMap;
+							material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
 						}
 						if (matDef.specularMapRef && matDef.specularMap)
 						{
-							properties.specularMap = matDef.specularMap;
+							material.setProperty(PhongProperties.SPECULAR_MAP, matDef.specularMap);
 						}
 						if (matDef.normalMapRef && matDef.normalMap)
 						{
-							properties.normalMap = matDef.normalMap;
+							material.setProperty(PhongProperties.NORMAL_MAP, matDef.normalMap);
 						}
-						if (matDef.alphaMapRef && matDef.alphaMask)
+						if (matDef.alphaMapRef && matDef.alphaMap)
 						{
-							properties.alphaMap = matDef.alphaMask;
+							material.setProperty(BasicProperties.ALPHA_MAP, matDef.alphaMap);
 						}
-						color = (matDef.diffuseR * 255);
-						color = (color << 8) + (matDef.diffuseG * 255);
-						color = (color << 8) + (matDef.diffuseB * 255);
-						properties.diffuseColor = color;
+						
+						if (matDef.diffuseB != 1 && matDef.diffuseG != 1 && matDef.diffuseR != 1)
+						{
+							color = (matDef.diffuseR * 255);
+							color = (color << 8) + (matDef.diffuseG * 255);
+							color = (color << 8) + (matDef.diffuseB * 255);
+							material.setProperty(BasicProperties.DIFFUSE_MAP_MULTIPLIER, color);
+						}
 					}
-					
-					material = new Material(_options.effect, properties, _groupNames[meshId] + "Material");
+
 					mesh = new Mesh(geometry, material, "");
 					result.push(mesh);
 				}
