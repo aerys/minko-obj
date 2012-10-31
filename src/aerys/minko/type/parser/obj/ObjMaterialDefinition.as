@@ -6,17 +6,17 @@ package aerys.minko.type.parser.obj
 
 	public final class ObjMaterialDefinition
 	{
-		public var ambientR			: Number;
-		public var ambientG			: Number;
-		public var ambientB			: Number;
+		public var ambientR			: Number		= 1.;
+		public var ambientG			: Number		= 1.;
+		public var ambientB			: Number		= 1.;
 		
-		public var diffuseR			: Number;
-		public var diffuseG			: Number;
-		public var diffuseB			: Number;
+		public var diffuseR			: Number		= 1.;
+		public var diffuseG			: Number		= 1.;
+		public var diffuseB			: Number		= 1.;
 		
-		public var specularR		: Number;
-		public var specularG		: Number;
-		public var specularB		: Number;
+		public var specularR		: Number		= 1.;
+		public var specularG		: Number		= 1.;
+		public var specularB		: Number		= 1.;
 		
 		public var alpha			: Number		= 1.;
 		public var shininess		: Number;
@@ -24,7 +24,7 @@ package aerys.minko.type.parser.obj
 		
 		public var diffuseMapRef	: String;
 		public var diffuseMap		: TextureResource;
-		public var alphaMask		: TextureResource;
+		public var alphaMap		: TextureResource;
 		public var alphaMapRef		: String;
 		public var lightMap			: TextureResource;
 		public var lightMapRef		: String;
