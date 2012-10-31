@@ -179,7 +179,7 @@ package aerys.minko.type.parser.obj
 					case 0x6d: // "m"
 						if (data.readUTFBytes(5) != 'tllib')
 							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "mtllib"?');
-						
+						eatSpaces(data);
 						parseMtllib(data); // we ignore mtllib instructions
 						break;
 					
