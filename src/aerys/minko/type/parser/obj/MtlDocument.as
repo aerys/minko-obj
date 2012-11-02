@@ -172,10 +172,14 @@ package aerys.minko.type.parser.obj
 								eatSpaces(data);
 								parseDiffuseMap(data);
 							}
-							else if (secondChar == 0x73)
+							else if (secondChar == 0x73) // 's'
 							{
 								eatSpaces(data);
 								parseSpecularMap(data);
+							}
+							else
+							{
+								gotoNextLine(data);
 							}
 						}
 						else if (utfBytes == 'ap_d')
@@ -190,6 +194,14 @@ package aerys.minko.type.parser.obj
 								eatSpaces(data);
 								parseNormalMap(data);
 							}
+							else
+							{
+								gotoNextLine(data);
+							}
+						}
+						else
+						{
+							gotoNextLine(data);
 						}
 						
 						break;
