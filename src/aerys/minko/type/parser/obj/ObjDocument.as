@@ -13,6 +13,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.render.material.phong.PhongProperties;
 	import aerys.minko.scene.node.Group;
 	import aerys.minko.scene.node.Mesh;
+	import aerys.minko.type.enum.Blending;
 	import aerys.minko.type.error.obj.ObjError;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
@@ -51,6 +52,8 @@ package aerys.minko.type.parser.obj
 		private var _isLoaded							: Boolean;
 		
 		private var _mtlFiles							: Vector.<String>;
+		
+		private var _materials							: Object = new Object();
 		
 		public function get isLoaded() : Boolean
 		{
@@ -464,40 +467,29 @@ package aerys.minko.type.parser.obj
 			return vertexFormat;
 		}
 		
-		private function createMeshs(meshId			: uint,
-									 matDef			: ObjMaterialDefinition) : Vector.<Mesh>
+		private function createOrGetMaterial(meshId	: uint, matDef : ObjMaterialDefinition) : Material
 		{
-			var format			: VertexFormat		= createVertexFormat(meshId);
-			var indexBuffer		: Vector.<uint>		= new Vector.<uint>();
-			var vertexBuffer	: ByteArray			= new ByteArray();
-			vertexBuffer.endian = Endian.LITTLE_ENDIAN;
+			var groupName : String = _groupNames[meshId];
+			var material : Material;
+			var color : uint;
 			
-			fillBuffers(meshId, format, indexBuffer, vertexBuffer);
-			
-			var result			: Vector.<Mesh>	= new Vector.<Mesh>();
-			var indexStream		: IndexStream;
-			var vertexStream	: VertexStream;
-			var vertexStreams 	: Vector.<IVertexStream>;
-			var geometry		: Geometry;
-			var material		: Material;
-			var properties		: Object;
-			var mesh			: Mesh;
-			var color			: uint = 0;
-			
-			indexBuffer.reverse();
-			if (indexBuffer.length < INDEX_LIMIT && vertexBuffer.length / format.numComponents < VERTEX_LIMIT)
+			if (_materials[groupName])
 			{
-				indexStream		= IndexStream.fromVector(_options.indexStreamUsage, indexBuffer);
-				vertexBuffer.position = 0;
-				vertexStream	= new VertexStream(_options.vertexStreamUsage, format, vertexBuffer);
-				
-				vertexStreams = new Vector.<IVertexStream>(1);
-				vertexStreams[0] = vertexStream;
-				geometry = new Geometry(vertexStreams, indexStream);
-				material = new Material(_options.effect, _groupNames[meshId] + "Material");
+				material = _materials[groupName];
+			}
+			else
+			{
+				material = new Material(_options.effect, null, groupName);
 				if (matDef)
 				{
-					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, new HLSAMatrix4x4(.0, 1., 1., matDef.alpha));
+					var diffuseTransform : HLSAMatrix4x4 = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
+					
+					if (matDef.diffuseB != 1 && matDef.diffuseG != 1 && matDef.diffuseR != 1)
+					{
+						diffuseTransform.appendScale(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB);
+					}
+					
+					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, diffuseTransform);
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
 					{
 						material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
@@ -513,18 +505,59 @@ package aerys.minko.type.parser.obj
 					if (matDef.alphaMapRef && matDef.alphaMap)
 					{
 						material.setProperty(BasicProperties.ALPHA_MAP, matDef.alphaMap);
-					}
-					
-					if (matDef.diffuseB != 1 && matDef.diffuseG != 1 && matDef.diffuseR != 1)
-					{
-						color = (matDef.diffuseR * 255);
-						color = (color << 8) + (matDef.diffuseG * 255);
-						color = (color << 8) + (matDef.diffuseB * 255);
-						material.setProperty(BasicProperties.DIFFUSE_MAP_MULTIPLIER, color);
+						material.setProperty(BasicProperties.BLENDING, Blending.ALPHA);
 					}
 				}
 				
-				mesh = new Mesh(geometry, material, _groupNames[meshId]);
+				_materials[groupName] = material;
+			}
+			
+			return material;
+		}
+		
+		private function createMesh(meshId : uint, matDef : ObjMaterialDefinition, format : VertexFormat, indexStream : IndexStream, vertexStream : VertexStream) : Mesh
+		{	
+			var vertexStreams 	: Vector.<IVertexStream>;
+			var geometry		: Geometry;
+			var material		: Material;
+
+			vertexStreams = new Vector.<IVertexStream>(1);
+			vertexStreams[0] = vertexStream;
+			geometry = new Geometry(vertexStreams, indexStream);
+			material = createOrGetMaterial(meshId, matDef);
+
+			return new Mesh(geometry, material, _groupNames[meshId]);
+		}
+		
+		private function createMeshs(meshId			: uint,
+									 matDef			: ObjMaterialDefinition) : Vector.<Mesh>
+		{
+			var format			: VertexFormat		= createVertexFormat(meshId);
+			var indexBuffer		: Vector.<uint>		= new Vector.<uint>();
+			var vertexBuffer	: ByteArray			= new ByteArray();
+			var indexStream		: IndexStream;
+			var vertexStream	: VertexStream;
+			vertexBuffer.endian = Endian.LITTLE_ENDIAN;
+			
+			fillBuffers(meshId, format, indexBuffer, vertexBuffer);
+			
+			var result			: Vector.<Mesh>	= new Vector.<Mesh>();
+			var vertexStreams 	: Vector.<IVertexStream>;
+			var geometry		: Geometry;
+			var material		: Material;
+			var properties		: Object;
+			var mesh			: Mesh;
+			var color			: uint = 0;
+			
+			indexBuffer.reverse();
+			if (indexBuffer.length < INDEX_LIMIT && vertexBuffer.length / format.numComponents < VERTEX_LIMIT)
+			{				
+				indexStream				= IndexStream.fromVector(_options.indexStreamUsage, indexBuffer);
+				vertexBuffer.position 	= 0;
+				vertexStream			= new VertexStream(_options.vertexStreamUsage, format, vertexBuffer);
+				
+
+				mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 				result.push(mesh);
 			}
 			else
@@ -546,40 +579,7 @@ package aerys.minko.type.parser.obj
 						vertexBuffers[i]
 					);
 					
-					vertexStreams = new Vector.<IVertexStream>(1);
-					vertexStreams[0] = vertexStream;
-					geometry = new Geometry(vertexStreams, indexStream);
-					material = new Material(_options.effect, _groupNames[meshId] + "Material");
-					if (matDef)
-					{
-						material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, new HLSAMatrix4x4(.0, 1., 1., matDef.alpha));
-						if (matDef.diffuseMapRef && matDef.diffuseMap)
-						{
-							material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
-						}
-						if (matDef.specularMapRef && matDef.specularMap)
-						{
-							material.setProperty(PhongProperties.SPECULAR_MAP, matDef.specularMap);
-						}
-						if (matDef.normalMapRef && matDef.normalMap)
-						{
-							material.setProperty(PhongProperties.NORMAL_MAP, matDef.normalMap);
-						}
-						if (matDef.alphaMapRef && matDef.alphaMap)
-						{
-							material.setProperty(BasicProperties.ALPHA_MAP, matDef.alphaMap);
-						}
-						
-						if (matDef.diffuseB != 1 && matDef.diffuseG != 1 && matDef.diffuseR != 1)
-						{
-							color = (matDef.diffuseR * 255);
-							color = (color << 8) + (matDef.diffuseG * 255);
-							color = (color << 8) + (matDef.diffuseB * 255);
-							material.setProperty(BasicProperties.DIFFUSE_MAP_MULTIPLIER, color);
-						}
-					}
-
-					mesh = new Mesh(geometry, material, "");
+					mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 					result.push(mesh);
 				}
 			}
