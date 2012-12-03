@@ -414,9 +414,7 @@ package aerys.minko.type.parser.obj
 		public function createScene(mtlDoc : MtlDocument)	: Group
 		{
 			if (!_isLoaded)
-			{
 				return null;
-			}
 			
 			var numMeshes	: uint		= _groupNames.length;
 			var result		: Group 	=  new Group();
@@ -432,7 +430,7 @@ package aerys.minko.type.parser.obj
 				}
 
 				var meshs		: Vector.<Mesh>	= createMeshes(meshId, matDef);
-				var meshsCount	: uint				= meshs.length;
+				var meshsCount	: uint			= meshs.length;
 				
 				for (var i : uint = 0; i < meshsCount; ++i)
 				{
