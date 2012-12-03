@@ -414,7 +414,7 @@ package aerys.minko.type.parser.obj
 					var matDef : ObjMaterialDefinition = mtlDoc.materials[group.name];
 				}
 
-				var meshs		: Vector.<Mesh>	= createMeshs(meshId, matDef);
+				var meshs		: Vector.<Mesh>	= createMeshes(meshId, matDef);
 				var meshsCount	: uint				= meshs.length;
 				
 				for (var i : uint = 0; i < meshsCount; ++i)
@@ -529,8 +529,8 @@ package aerys.minko.type.parser.obj
 			return new Mesh(geometry, material, _groupNames[meshId]);
 		}
 		
-		private function createMeshs(meshId			: uint,
-									 matDef			: ObjMaterialDefinition) : Vector.<Mesh>
+		private function createMeshes(meshId	: uint,
+                                      matDef	: ObjMaterialDefinition) : Vector.<Mesh>
 		{
 			var format			: VertexFormat		= createVertexFormat(meshId);
 			var indexBuffer		: Vector.<uint>		= new Vector.<uint>();
