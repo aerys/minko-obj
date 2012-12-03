@@ -185,16 +185,15 @@ package aerys.minko.type.parser.obj
 						parseMtllib(data); // we ignore mtllib instructions
 						break;
 					
+					case 0x0a: // "\n"
+						break;
+                    
+                    case 0x6f: // "o", ignore object name
 					case 0x23: // "#"
 					case 0x73: // "s"
 					case 0x0d: // "\r"
-						gotoNextLine(data); // we ignore smoothing group instructions
-						break;
-					
-					case 0x0a: // "\n"
-						break;
-					
 					default:
+						gotoNextLine(data); // we ignore smoothing group instructions
 						break;
 				}
 			}
@@ -247,11 +246,8 @@ package aerys.minko.type.parser.obj
 			var mtl		: String = "";
 			var char	: String;
 			
-			while ((char = data.readUTFBytes(1)) != '\n')
-			{
-				if (char != '\r')
-					mtl += char;
-			}
+			while ((char = data.readUTFBytes(1)) != '\n' && char != '\r')
+                mtl += char;
 			
 			_mtlFiles.push(mtl);
 		}
@@ -434,7 +430,8 @@ package aerys.minko.type.parser.obj
 				
 				for (var i : uint = 0; i < meshsCount; ++i)
 				{
-					if (meshs[i] != null && meshs[i].geometry.getVertexStream(0).numVertices != 0 && meshs[i].geometry.indexStream.length != 0)
+					if (meshs[i] != null && meshs[i].geometry.getVertexStream(0).numVertices != 0
+                        && meshs[i].geometry.indexStream.length != 0)
 					{
 						group.addChild(meshs[i]);
 					}
