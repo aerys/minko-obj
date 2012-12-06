@@ -85,10 +85,11 @@ package aerys.minko.type.parser.obj
 			var dependencies : Vector.<ILoader> = new <ILoader>[];
 			for each (var mtl : String in _document.MtlFiles)
 			{
-				var loader		: ILoader	= _options.dependencyLoaderFunction(mtl, false, _options);
+				var loader	: ILoader	= _options.dependencyLoaderFunction(mtl, false, _options);
+                
 				if (loader)
 				{
-					loader.complete.add(onMtlCompleteHandler);
+					loader.complete.add(mtlCompleteHandler);
 					dependencies.push(loader);
 				}
 			}
@@ -96,8 +97,8 @@ package aerys.minko.type.parser.obj
 			return dependencies;
 		}
 		
-		private function onMtlCompleteHandler(loader	: ILoader,
-											  doc		: MtlDocument) : void
+		private function mtlCompleteHandler(loader	: ILoader,
+                                            doc		: MtlDocument) : void
 		{
 			_mtlDocument = doc;
 		}
