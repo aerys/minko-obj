@@ -196,16 +196,15 @@ package aerys.minko.type.parser.obj
 						parseMtllib(data); // we ignore mtllib instructions
 						break;
 					
+					case 0x0a: // "\n"
+						break;
+                    
+                    case 0x6f: // "o", ignore object name
 					case 0x23: // "#"
 					case 0x73: // "s"
 					case 0x0d: // "\r"
-						gotoNextLine(data); // we ignore smoothing group instructions
-						break;
-					
-					case 0x0a: // "\n"
-						break;
-					
 					default:
+						gotoNextLine(data); // we ignore smoothing group instructions
 						break;
 				}
 			}
@@ -258,11 +257,8 @@ package aerys.minko.type.parser.obj
 			var mtl		: String = "";
 			var char	: String;
 			
-			while ((char = data.readUTFBytes(1)) != '\n')
-			{
-				if (char != '\r')
-					mtl += char;
-			}
+			while ((char = data.readUTFBytes(1)) != '\n' && char != '\r')
+                mtl += char;
 			
 			_mtlFiles.push(mtl);
 		}
@@ -273,50 +269,67 @@ package aerys.minko.type.parser.obj
 			
 			for (var i : uint = 0; i < nbFloats; ++i)
 			{
-				var currentDigits	: uint		= 0;
-				var isPositive		: Number	= 1;
-				var isDecimalPart	: uint		= 0;
-				var decimalOpPower	: uint		= 0;
-				
-				while (true)
+				var readChar : uint = data.readUnsignedByte();
+				var str : String = "";
+				while (readChar != 0x20 && readChar != 0x0d && readChar != 0x0a)
 				{
-					var readChar : uint = data.readUnsignedByte();
-					
-					if (readChar == 0x2d) // "-"
-					{
-						isPositive *= -1;
-						
-					}
-					else if (readChar >= 0x30 && readChar < 0x3a)
-					{
-						currentDigits = 10 * currentDigits + readChar - 0x30;
-						decimalOpPower += isDecimalPart;
-					}
-					else if (readChar == 0x2e) // "."
-					{
-						isDecimalPart = 1;
-					}
-					else if (readChar == 0x20)
-					{
-						break;
-					}
-					else if (readChar == 0x0d)
-					{
-						break;
-					}
-					else if (readChar == 0x0a)
-					{
-						++_currentLine;
-						eolReached = true;
-						break;
-					}
-					else
-					{
-						throw new ObjError('Line ' + _currentLine + ': invalid float');
-					}
+					str += String.fromCharCode(readChar);
+					readChar = data.readUnsignedByte();
 				}
-				destination.push(isPositive * currentDigits * TEN_POWERS[decimalOpPower]);
+				destination.push(parseFloat(str));
+				if (readChar == 0x0a)
+				{
+					++_currentLine;
+					eolReached = true;
+					break;
+				}
 			}
+//			
+//			for (var i : uint = 0; i < nbFloats; ++i)
+//			{
+//				var currentDigits	: uint		= 0;
+//				var isPositive		: Number	= 1;
+//				var isDecimalPart	: uint		= 0;
+//				var decimalOpPower	: uint		= 0;
+//				
+//				while (true)
+//				{
+//					var readChar : uint = data.readUnsignedByte();
+//					
+//					if (readChar == 0x2d) // "-"
+//					{
+//						isPositive *= -1;
+//					}
+//					else if (readChar >= 0x30 && readChar < 0x3a)
+//					{
+//						currentDigits = 10 * currentDigits + readChar - 0x30;
+//						decimalOpPower += isDecimalPart;
+//					}
+//					else if (readChar == 0x2e) // "."
+//					{
+//						isDecimalPart = 1;
+//					}
+//					else if (readChar == 0x20)
+//					{
+//						break;
+//					}
+//					else if (readChar == 0x0d)
+//					{
+//						break;
+//					}
+//					else if (readChar == 0x0a)
+//					{
+//						++_currentLine;
+//						eolReached = true;
+//						break;
+//					}
+//					else
+//					{
+//						throw new ObjError('Line ' + _currentLine + ': invalid float');
+//					}
+//				}
+//				destination.push(isPositive * currentDigits * TEN_POWERS[decimalOpPower]);
+//			}
 			
 			if (!eolReached)
 				gotoNextLine(data);
@@ -408,9 +421,7 @@ package aerys.minko.type.parser.obj
 		public function createScene(mtlDoc : MtlDocument)	: Group
 		{
 			if (!_isLoaded)
-			{
 				return null;
-			}
 			
 			var numMeshes	: uint		= _groupNames.length;
 			var result		: Group 	=  new Group();
@@ -425,12 +436,13 @@ package aerys.minko.type.parser.obj
 					var matDef : ObjMaterialDefinition = mtlDoc.materials[group.name];
 				}
 
-				var meshs		: Vector.<Mesh>	= createMeshs(meshId, matDef);
-				var meshsCount	: uint				= meshs.length;
+				var meshs		: Vector.<Mesh>	= createMeshes(meshId, matDef);
+				var meshsCount	: uint			= meshs.length;
 				
 				for (var i : uint = 0; i < meshsCount; ++i)
 				{
-					if (meshs[i] != null && meshs[i].geometry.getVertexStream(0).numVertices != 0 && meshs[i].geometry.indexStream.length != 0)
+					if (meshs[i] != null && meshs[i].geometry.getVertexStream(0).numVertices != 0
+                        && meshs[i].geometry.indexStream.length != 0)
 					{
 						group.addChild(meshs[i]);
 					}
@@ -478,6 +490,19 @@ package aerys.minko.type.parser.obj
 			return vertexFormat;
 		}
 		
+		private function toRGB(r : Number, g : Number, b : Number) : uint
+		{
+			var color : uint = 0;
+//			color = 255;
+			color = (color) + (r * 255);
+			color = (color << 8) + (g * 255);
+			color = (color << 8) + (b * 255);
+			color = (color << 8) + 255;
+			return color;
+			
+//			return 65536 * r + 256 * g + b;
+		}
+		
 		private function createOrGetMaterial(meshId	: uint, matDef : ObjMaterialDefinition) : Material
 		{
 			var groupName : String = _groupNames[meshId];
@@ -495,12 +520,14 @@ package aerys.minko.type.parser.obj
 				{
 					var diffuseTransform : HLSAMatrix4x4 = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
 					
-					if (matDef.diffuseB != 1 && matDef.diffuseG != 1 && matDef.diffuseR != 1)
+					if (matDef.diffuseB != 1 || matDef.diffuseG != 1 || matDef.diffuseR != 1)
 					{
-						diffuseTransform.appendScale(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB);
+						diffuseTransform.appendTranslation(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB);
 					}
 					
+					material.setProperty(PhongProperties.AMBIENT_MULTIPLIER, toRGB(matDef.ambientR, matDef.ambientG, matDef.ambientB));
 					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, diffuseTransform);
+//					material.setProperty(PhongProperties.SPECULAR_MULTIPLIER, toRGB(matDef.specularR, matDef.specularG, matDef.specularB));
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
 					{
 						material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
@@ -544,8 +571,8 @@ package aerys.minko.type.parser.obj
 			return new Mesh(geometry, material, _groupNames[meshId]);
 		}
 		
-		private function createMeshs(meshId			: uint,
-									 matDef			: ObjMaterialDefinition) : Vector.<Mesh>
+		private function createMeshes(meshId	: uint,
+                                      matDef	: ObjMaterialDefinition) : Vector.<Mesh>
 		{
 			var format			: VertexFormat		= createVertexFormat(meshId);
 			var indexBuffer		: Vector.<uint>		= new Vector.<uint>();
