@@ -28,6 +28,8 @@ package aerys.minko.type.parser.obj
 		private static const INDEX_LIMIT				: uint						= 524270;
 		private static const VERTEX_LIMIT				: uint						= 65535;
 		private static const TMP_BUFFER					: Vector.<Vector.<uint>>	= new Vector.<Vector.<uint>>(3);
+		private static const TMP_BUFFER2				: Vector.<Vector.<Number>>	= new Vector.<Vector.<Number>>(3);
+		private static const TMP_BUFFER3				: Vector.<uint>				= new <uint>[3, 2, 3];
 		
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
 			1, 
@@ -48,23 +50,18 @@ package aerys.minko.type.parser.obj
 
 		private var _data								: Group;
 		private var _options							: ParserOptions;
-		
 		private var _currentLine						: uint;
-		
 		private var _positions							: Vector.<Number>;
 		private var _uvs								: Vector.<Number>;
 		private var _normals							: Vector.<Number>;
-		
 		private var _groupNames							: Vector.<String>;
 		private var _groupFacesPositions				: Vector.<Vector.<uint>>;
 		private var _groupFacesUvs						: Vector.<Vector.<uint>>;
 		private var _groupFacesNormals					: Vector.<Vector.<uint>>;
-		
 		private var _isLoaded							: Boolean;
-		
 		private var _mtlFiles							: Vector.<String>;
-		
-		private var _materials							: Object = new Object();
+		private var _sceneName							: String					= null;
+		private var _materials							: Object					= new Object();
 		
 		public function get isLoaded() : Boolean
 		{
@@ -171,7 +168,7 @@ package aerys.minko.type.parser.obj
 								throw new ObjError('Line ' + _currentLine + ': unknown vertex declaration');
 						}
 						break;
-					
+
 					case 0x66: // "f"
 						skipChars(data, 1);
 						parseFace(data, currentMaterialId);
@@ -190,7 +187,8 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					case 0x6d: // "m"
-						if (data.readUTFBytes(5) != 'tllib')
+						var str : String = data.readUTFBytes(5);
+						if (str != 'tllib')
 							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "mtllib"?');
 						eatSpaces(data);
 						parseMtllib(data); // we ignore mtllib instructions
@@ -200,6 +198,8 @@ package aerys.minko.type.parser.obj
 						break;
                     
                     case 0x6f: // "o", ignore object name
+						parseObjectName(data);
+						break;
 					case 0x23: // "#"
 					case 0x73: // "s"
 					case 0x0d: // "\r"
@@ -207,6 +207,18 @@ package aerys.minko.type.parser.obj
 						gotoNextLine(data); // we ignore smoothing group instructions
 						break;
 				}
+			}
+		}
+		
+		private function parseObjectName(data:ByteArray):void
+		{
+			var char	: String;
+			
+			_sceneName = "";
+			while ((char = data.readUTFBytes(1)) != '\n')
+			{
+				if (char != '\r')
+					_sceneName += char;
 			}
 		}
 		
@@ -243,7 +255,7 @@ package aerys.minko.type.parser.obj
 
 			var materialId : uint = materialId = _groupNames.length;
 				
-			_groupNames.push(matName)
+			_groupNames.push(matName);
 			_groupFacesPositions.push(new Vector.<uint>());
 			_groupFacesUvs.push(new Vector.<uint>());
 			_groupFacesNormals.push(new Vector.<uint>());
@@ -257,89 +269,97 @@ package aerys.minko.type.parser.obj
 			var mtl		: String = "";
 			var char	: String;
 			
-			while ((char = data.readUTFBytes(1)) != '\n' && char != '\r')
-                mtl += char;
+			while ((char = data.readUTFBytes(1)) != '\n')
+				if (char != '\r')
+                	mtl += char;
 			
 			_mtlFiles.push(mtl);
 		}
 		
+		private function getFloat(data : ByteArray, lastReadChar : Array = null) : Number
+		{
+			var currentDigits	: uint		= 0;
+			var isPositive		: Number	= 1;
+			var isDecimalPart	: uint		= 0;
+			var decimalOpPower	: uint		= 0;
+			var readChar		: uint		= data.readUnsignedByte();
+			
+			if (readChar == 0x2d) // "-"
+			{
+				isPositive = -1;
+				readChar = data.readUnsignedByte();
+			}
+			
+			while (readChar != 0x0a
+				&& (readChar != 0x20)
+				&& (readChar != 0x09)
+				&& (readChar != 0x65)
+				&& (readChar != 0x45))
+			{
+				if (readChar >= 0x30 && readChar < 0x3a)
+				{
+					currentDigits = 10 * currentDigits + readChar - 0x30;
+					decimalOpPower += isDecimalPart;
+				}
+				else if (readChar == 0x2e) // "."
+				{
+					isDecimalPart = 1;
+				}
+				
+				readChar = data.readUnsignedByte();
+			}
+			
+			if (lastReadChar != null)
+				lastReadChar[0] = readChar;
+
+			return isPositive * currentDigits * TEN_POWERS[decimalOpPower];
+		}
+		
 		private function parseFloats(data : ByteArray, nbFloats : uint, destination : Vector.<Number>) : void
 		{
-			var eolReached : Boolean = false;
+			var lastReadChar		: Array		= new Array();
 			
 			for (var i : uint = 0; i < nbFloats; ++i)
 			{
-				var readChar : uint = data.readUnsignedByte();
-				var str : String = "";
-				while (readChar != 0x20 && readChar != 0x0d && readChar != 0x0a)
+				var floatValue		: Number	= getFloat(data, lastReadChar);
+				if ((lastReadChar[0] == 0x65) || (lastReadChar[0] == 0x45))
 				{
-					str += String.fromCharCode(readChar);
-					readChar = data.readUnsignedByte();
+					var powerOfTen 	: Number	= getFloat(data, lastReadChar);
+					floatValue = floatValue * Math.pow(10, powerOfTen);
 				}
-				destination.push(parseFloat(str));
-				if (readChar == 0x0a)
-				{
-					++_currentLine;
-					eolReached = true;
-					break;
-				}
+				
+				destination.push(floatValue);
 			}
-//			
-//			for (var i : uint = 0; i < nbFloats; ++i)
-//			{
-//				var currentDigits	: uint		= 0;
-//				var isPositive		: Number	= 1;
-//				var isDecimalPart	: uint		= 0;
-//				var decimalOpPower	: uint		= 0;
-//				
-//				while (true)
-//				{
-//					var readChar : uint = data.readUnsignedByte();
-//					
-//					if (readChar == 0x2d) // "-"
-//					{
-//						isPositive *= -1;
-//					}
-//					else if (readChar >= 0x30 && readChar < 0x3a)
-//					{
-//						currentDigits = 10 * currentDigits + readChar - 0x30;
-//						decimalOpPower += isDecimalPart;
-//					}
-//					else if (readChar == 0x2e) // "."
-//					{
-//						isDecimalPart = 1;
-//					}
-//					else if (readChar == 0x20)
-//					{
-//						break;
-//					}
-//					else if (readChar == 0x0d)
-//					{
-//						break;
-//					}
-//					else if (readChar == 0x0a)
-//					{
-//						++_currentLine;
-//						eolReached = true;
-//						break;
-//					}
-//					else
-//					{
-//						throw new ObjError('Line ' + _currentLine + ': invalid float');
-//					}
-//				}
-//				destination.push(isPositive * currentDigits * TEN_POWERS[decimalOpPower]);
-//			}
 			
-			if (!eolReached)
+			if (lastReadChar[0] == 0x0a)
+				++_currentLine;
+			else
 				gotoNextLine(data);
+		}
+		
+		private function getFinalIndex(isRelative : Boolean, currentIndexSemantic : uint, currentIndex : uint) : uint
+		{
+			var finalIndex	: uint = 0;
+			
+			if (isRelative)
+			{
+				finalIndex = (TMP_BUFFER2[currentIndexSemantic].length / TMP_BUFFER3[currentIndexSemantic]) - currentIndex + 1;
+			}
+			else
+			{
+				finalIndex = currentIndex;
+			}
+			
+			return finalIndex;
 		}
 		
 		private function parseFace(data			: ByteArray, 
 								   materialId	: uint) : void
 		{
-			var currentIndex			: uint = 0;
-			var numVertices				: uint = 0;
+			var currentIndex			: uint 		= 0;
+			var numVertices				: uint 		= 0;
+			var isRelative				: Boolean	= false;
+			var index					: uint		= 0;
 			
 			// 0: position, 1: uv, 2: normal
 			var currentIndexSemantic	: uint = 0;
@@ -356,20 +376,37 @@ package aerys.minko.type.parser.obj
 			TMP_BUFFER[1] = _groupFacesUvs[materialId];
 			TMP_BUFFER[2] = _groupFacesNormals[materialId];
 			
+			TMP_BUFFER2[0] = _positions;
+			TMP_BUFFER2[1] = _uvs;
+			TMP_BUFFER2[2] = _normals;
+			
 			var lastWasNumber : Boolean = false;
 			while (true)
 			{
 				var readChar		: uint		= data.readUnsignedByte();
 				var processingOk	: Boolean	= true;
 				
-				if (readChar >= 0x30 && readChar < 0x3a) // ['0'-'9']
+				if (readChar == 0x2d) // -
+				{
+					isRelative = true;
+				}
+				else if (readChar >= 0x30 && readChar < 0x3a) // ['0'-'9']
 				{
 					currentIndex = 10 * currentIndex + readChar - 0x30;
 					lastWasNumber = true;
 				}
 				else if (readChar == 0x2f) // "/"
 				{
-					TMP_BUFFER[currentIndexSemantic].push(currentIndex);
+					if (lastWasNumber)
+					{
+						index = getFinalIndex(isRelative, currentIndexSemantic, currentIndex);
+						TMP_BUFFER[currentIndexSemantic].push(index);
+					}
+					else
+					{
+						index = 0;
+					}
+					isRelative = false;
 					currentIndex = 0;
 					++currentIndexSemantic;
 					lastWasNumber = false;
@@ -379,12 +416,17 @@ package aerys.minko.type.parser.obj
 					if (lastWasNumber)
 					{
 						// push new point
-						TMP_BUFFER[currentIndexSemantic].push(currentIndex);
+						index = getFinalIndex(isRelative, currentIndexSemantic, currentIndex);
+						TMP_BUFFER[currentIndexSemantic].push(index);
+						if (currentIndexSemantic == 0) // Only position has been given, we need to push a Zero normal
+						{
+							TMP_BUFFER[2].push(0);
+						}
 						currentIndex = 0;
 						currentIndexSemantic = 0;
 						++numVertices;
 						lastWasNumber = false;
-						
+						isRelative = false;
 						// triangulate
 						if (numVertices > 3)
 							for (var i : uint = 0; i < 3; ++i)
@@ -425,6 +467,8 @@ package aerys.minko.type.parser.obj
 			
 			var numMeshes	: uint		= _groupNames.length;
 			var result		: Group 	=  new Group();
+			if (_sceneName != null)
+				result.name = _sceneName;
 			
 			for (var meshId : uint = 0; meshId < numMeshes; ++meshId)
 			{
@@ -493,14 +537,12 @@ package aerys.minko.type.parser.obj
 		private function toRGB(r : Number, g : Number, b : Number) : uint
 		{
 			var color : uint = 0;
-//			color = 255;
 			color = (color) + (r * 255);
 			color = (color << 8) + (g * 255);
 			color = (color << 8) + (b * 255);
 			color = (color << 8) + 255;
-			return color;
 			
-//			return 65536 * r + 256 * g + b;
+			return color;
 		}
 		
 		private function createOrGetMaterial(meshId	: uint, matDef : ObjMaterialDefinition) : Material
@@ -520,14 +562,15 @@ package aerys.minko.type.parser.obj
 				{
 					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(.0, 1., 1., matDef.alpha);
 					
-					if (matDef.diffuseB != 1 || matDef.diffuseG != 1 || matDef.diffuseR != 1)
+					if (matDef.diffuseB != 1
+						|| matDef.diffuseG != 1
+						|| matDef.diffuseR != 1)
 					{
-						diffuseTransform.appendTranslation(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB);
+						if (matDef.diffuseB != 0 && matDef.diffuseG != 0 && matDef.diffuseR != 0) 
+							diffuseTransform.appendScale(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB);
 					}
 					
-					material.setProperty(PhongProperties.AMBIENT_MULTIPLIER, toRGB(matDef.ambientR, matDef.ambientG, matDef.ambientB));
 					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, diffuseTransform);
-//					material.setProperty(PhongProperties.SPECULAR_MULTIPLIER, toRGB(matDef.specularR, matDef.specularG, matDef.specularB));
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
 					{
 						material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
@@ -571,34 +614,48 @@ package aerys.minko.type.parser.obj
 			return new Mesh(geometry, material, _groupNames[meshId]);
 		}
 		
+		private function cleanGeometry(iStream : IndexStream, vStream : VertexStream, format : VertexFormat) : void
+		{
+			var vertexData		: ByteArray;
+			var indexData		: ByteArray;
+			
+			vertexData = vStream.lock();
+			indexData = iStream.lock();
+			vertexData.position = 0;
+			indexData.position = 0;
+			GeometrySanitizer.removeUnusedVertices(vertexData, indexData, format.numBytesPerVertex);
+			vertexData.position = 0;
+			indexData.position = 0;
+			GeometrySanitizer.removeDuplicatedVertices(vertexData, indexData, format.numBytesPerVertex);
+			vStream.unlock();
+			iStream.unlock();
+		}
+		
 		private function createMeshes(meshId	: uint,
                                       matDef	: ObjMaterialDefinition) : Vector.<Mesh>
 		{
 			var format			: VertexFormat		= createVertexFormat(meshId);
 			var indexBuffer		: Vector.<uint>		= new Vector.<uint>();
-			var vertexBuffer	: ByteArray			= new ByteArray();
+			var vertexData		: ByteArray			= new ByteArray();
 			var indexStream		: IndexStream;
 			var vertexStream	: VertexStream;
-			vertexBuffer.endian = Endian.LITTLE_ENDIAN;
-			
-			fillBuffers(meshId, format, indexBuffer, vertexBuffer);
-			
-			var result			: Vector.<Mesh>	= new Vector.<Mesh>();
-			var vertexStreams 	: Vector.<IVertexStream>;
-			var geometry		: Geometry;
-			var material		: Material;
-			var properties		: Object;
+			var result			: Vector.<Mesh>		= new Vector.<Mesh>();
 			var mesh			: Mesh;
-			var color			: uint = 0;
+			
+			vertexData.endian = Endian.LITTLE_ENDIAN;
+			fillBuffers(meshId, format, indexBuffer, vertexData);
+			
 			
 			indexBuffer.reverse();
-			if (indexBuffer.length < INDEX_LIMIT && vertexBuffer.length / format.numComponents < VERTEX_LIMIT)
+			vertexData.position = 0;
+			if (indexBuffer.length < INDEX_LIMIT && vertexData.length / format.numComponents < VERTEX_LIMIT)
 			{				
 				indexStream				= IndexStream.fromVector(_options.indexStreamUsage, indexBuffer);
-				vertexBuffer.position 	= 0;
-				vertexStream			= new VertexStream(_options.vertexStreamUsage, format, vertexBuffer);
+				vertexData.position 	= 0;
+				vertexStream			= new VertexStream(_options.vertexStreamUsage, format, vertexData);
 				
-
+				cleanGeometry(indexStream, vertexStream, format);
+				
 				mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 				result.push(mesh);
 			}
@@ -607,19 +664,21 @@ package aerys.minko.type.parser.obj
 				var indexBuffers	: Vector.<ByteArray>		= new Vector.<ByteArray>();
 				var vertexBuffers	: Vector.<ByteArray>		= new Vector.<ByteArray>();
 				
-				GeometrySanitizer.splitBuffers(vertexBuffer, indexBuffer, vertexBuffers, indexBuffers, format.numBytesPerVertex);
+				GeometrySanitizer.splitBuffers(vertexData, indexBuffer, vertexBuffers, indexBuffers, format.numBytesPerVertex);
 				var numMeshes	: uint	= indexBuffers.length;
-				
 				for (var i : uint = 0; i < numMeshes; ++i)
 				{
 					indexStream = new IndexStream(_options.indexStreamUsage,
 						indexBuffers[i]);
 					
+				
 					vertexStream = new VertexStream(
 						_options.vertexStreamUsage,
 						format,
 						vertexBuffers[i]
 					);
+					
+					cleanGeometry(indexStream, vertexStream, format);
 					
 					mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 					result.push(mesh);
@@ -658,30 +717,33 @@ package aerys.minko.type.parser.obj
 				
 				var positionIndex : uint = 3 * (positionIndices[indexId] - 1);
 				tmpVertex[tmpVertexComponentId++] = _positions[positionIndex];
-				tmpVertex[tmpVertexComponentId++] = _positions[int(positionIndex + 1)];
-				tmpVertex[tmpVertexComponentId++] = _positions[int(positionIndex + 2)];
+				tmpVertex[tmpVertexComponentId++] = _positions[uint(positionIndex + 1)];
+				tmpVertex[tmpVertexComponentId++] = _positions[uint(positionIndex + 2)];
 				
 				if (useUVs)
 				{
-					var uvIndex : int = 2 * (uvsIndices[indexId] - 1);
+					var uvIndex : int	= 2 * (uvsIndices[indexId] - 1);
 					if (uvIndex >= 0)
 					{
-						tmpVertex[tmpVertexComponentId++] = _uvs[uvIndex];
-						tmpVertex[tmpVertexComponentId++] = 1 - _uvs[int(uvIndex + 1)];
+						tmpVertex[uint(tmpVertexComponentId++)] = _uvs[uint(uvIndex)];
+						tmpVertex[uint(tmpVertexComponentId++)] = 1 - _uvs[uint(uvIndex + 1)];
 					}
 					else
 					{
-						tmpVertex[tmpVertexComponentId++] = 0;
-						tmpVertex[tmpVertexComponentId++] = 0;
+						tmpVertex[uint(tmpVertexComponentId++)] = 0;
+						tmpVertex[uint(tmpVertexComponentId++)] = 0;
 					}
 				}
 				
 				if (useNormals)
 				{
 					var normalIndex : int = 3 * (normalIndices[indexId] - 1);
-					tmpVertex[tmpVertexComponentId++] = _normals[normalIndex];
-					tmpVertex[tmpVertexComponentId++] = _normals[int(normalIndex + 1)];
-					tmpVertex[tmpVertexComponentId++] = _normals[int(normalIndex + 2)];
+					if (normalIndex >= 0)
+					{
+						tmpVertex[uint(tmpVertexComponentId++)] = _normals[uint(normalIndex)];
+						tmpVertex[uint(tmpVertexComponentId++)] = _normals[uint(normalIndex + 1)];
+						tmpVertex[uint(tmpVertexComponentId++)] = _normals[uint(normalIndex + 2)];
+					}
 				}
 				
 				var joinedVertex	: String	= tmpVertex.join('|');
@@ -689,8 +751,8 @@ package aerys.minko.type.parser.obj
 				{
 					for (tmpVertexComponentId = 0; tmpVertexComponentId < tmpVertexDwords; ++tmpVertexComponentId)
 						vertexData.writeFloat(tmpVertex[tmpVertexComponentId]);
-					
-					verticesToIndex[joinedVertex] = vertexIndex = currentNumVertices++;
+					vertexIndex = currentNumVertices++;
+					verticesToIndex[joinedVertex] = vertexIndex;
 				}
 				else
 				{
