@@ -17,7 +17,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.type.error.obj.ObjError;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
-	import aerys.minko.type.math.HLSAMatrix4x4;
+	import aerys.minko.type.math.HSLAMatrix4x4;
 	
 	import flash.utils.ByteArray;
 	import flash.utils.Endian;
@@ -518,7 +518,7 @@ package aerys.minko.type.parser.obj
 				material = new Material(_options.effect, null, groupName);
 				if (matDef)
 				{
-					var diffuseTransform : HLSAMatrix4x4 = new HLSAMatrix4x4(.0, 1., 1., matDef.alpha);
+					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(.0, 1., 1., matDef.alpha);
 					
 					if (matDef.diffuseB != 1 || matDef.diffuseG != 1 || matDef.diffuseR != 1)
 					{
