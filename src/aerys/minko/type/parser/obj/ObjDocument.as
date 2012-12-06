@@ -30,9 +30,20 @@ package aerys.minko.type.parser.obj
 		private static const TMP_BUFFER					: Vector.<Vector.<uint>>	= new Vector.<Vector.<uint>>(3);
 		
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
-			1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001,
-			0.0000001, 0.00000001, 0.000000001, 0.0000000001,
-			0.00000000001, 0.000000000001, 0.0000000000001
+			1, 
+			0.1, 
+			0.01, 
+			0.001,
+			0.0001, 
+			0.00001, 
+			0.000001,
+			0.0000001, 
+			0.00000001, 
+			0.000000001, 
+			0.0000000001,
+			0.00000000001, 
+			0.000000000001, 
+			0.0000000000001
 		]);
 
 		private var _data								: Group;
@@ -515,16 +526,20 @@ package aerys.minko.type.parser.obj
 			return material;
 		}
 		
-		private function createMesh(meshId : uint, matDef : ObjMaterialDefinition, format : VertexFormat, indexStream : IndexStream, vertexStream : VertexStream) : Mesh
+		private function createMesh(meshId 			: uint, 
+									matDef 			: ObjMaterialDefinition, 
+									format 			: VertexFormat, 
+									indexStream 	: IndexStream, 
+									vertexStream 	: VertexStream) : Mesh
 		{	
 			var vertexStreams 	: Vector.<IVertexStream>;
 			var geometry		: Geometry;
 			var material		: Material;
 
-			vertexStreams = new Vector.<IVertexStream>(1);
-			vertexStreams[0] = vertexStream;
-			geometry = new Geometry(vertexStreams, indexStream);
-			material = createOrGetMaterial(meshId, matDef);
+			vertexStreams 		= new Vector.<IVertexStream>(1);
+			vertexStreams[0] 	= vertexStream;
+			geometry 			= new Geometry(vertexStreams, indexStream);
+			material 			= createOrGetMaterial(meshId, matDef);
 
 			return new Mesh(geometry, material, _groupNames[meshId]);
 		}
