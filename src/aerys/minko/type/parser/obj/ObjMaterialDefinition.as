@@ -1,10 +1,9 @@
 package aerys.minko.type.parser.obj
 {
-	import aerys.minko.render.resource.texture.TextureResource;
-	
-	import mx.controls.Text;
 
-	public final class ObjMaterialDefinition
+import aerys.minko.render.resource.texture.TextureResource;
+
+public final class ObjMaterialDefinition
 	{
 		public var ambientR			: Number		= 1.;
 		public var ambientG			: Number		= 1.;
