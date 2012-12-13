@@ -48,20 +48,20 @@ package aerys.minko.type.parser.obj
 			0.0000000000001
 		]);
 
-		private var _data								: Group;
-		private var _options							: ParserOptions;
-		private var _currentLine						: uint;
-		private var _positions							: Vector.<Number>;
-		private var _uvs								: Vector.<Number>;
-		private var _normals							: Vector.<Number>;
-		private var _groupNames							: Vector.<String>;
-		private var _groupFacesPositions				: Vector.<Vector.<uint>>;
-		private var _groupFacesUvs						: Vector.<Vector.<uint>>;
-		private var _groupFacesNormals					: Vector.<Vector.<uint>>;
-		private var _isLoaded							: Boolean;
-		private var _mtlFiles							: Vector.<String>;
-		private var _sceneName							: String					= null;
-		private var _materials							: Object					= new Object();
+		private var _data					: Group;
+		private var _options				: ParserOptions;
+		private var _currentLine			: uint;
+		private var _positions				: Vector.<Number>;
+		private var _uvs					: Vector.<Number>;
+		private var _normals				: Vector.<Number>;
+		private var _groupNames				: Vector.<String>;
+		private var _groupFacesPositions    : Vector.<Vector.<uint>>;
+		private var _groupFacesUvs			: Vector.<Vector.<uint>>;
+		private var _groupFacesNormals		: Vector.<Vector.<uint>>;
+		private var _isLoaded				: Boolean;
+		private var _mtlFiles				: Vector.<String>;
+		private var _sceneName				: String;
+		private var _materials				: Object;
 		
 		public function get isLoaded() : Boolean
 		{
@@ -89,6 +89,8 @@ package aerys.minko.type.parser.obj
 			_mtlFiles				= new Vector.<String>();
 			
 			_isLoaded				= false;
+            
+            _materials              = {};
 		}
 		
 		public function fromObjFile(data		: ByteArray, 
