@@ -195,6 +195,7 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					case 0x0a: // "\n"
+						++_currentLine;
 						break;
                     
                     case 0x6f: // "o", ignore object name
@@ -418,7 +419,7 @@ package aerys.minko.type.parser.obj
 						// push new point
 						index = getFinalIndex(isRelative, currentIndexSemantic, currentIndex);
 						TMP_BUFFER[currentIndexSemantic].push(index);
-						if (currentIndexSemantic == 0) // Only position has been given, we need to push a Zero normal
+						if (currentIndexSemantic < 2) // Only position (and maybe UV) has been given, we need to push a Zero normal
 						{
 							TMP_BUFFER[2].push(0);
 						}
