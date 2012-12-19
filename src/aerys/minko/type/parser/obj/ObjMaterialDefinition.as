@@ -1,8 +1,7 @@
 package aerys.minko.type.parser.obj
 {
 	import aerys.minko.render.resource.texture.TextureResource;
-	
-	import mx.controls.Text;
+
 
 	public final class ObjMaterialDefinition
 	{
