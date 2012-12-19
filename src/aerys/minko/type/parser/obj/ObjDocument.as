@@ -256,7 +256,7 @@ package aerys.minko.type.parser.obj
 					matName += char;
 			}
 
-			var materialId : uint = materialId = _groupNames.length;
+			var materialId : uint = _groupNames.length;
 				
 			_groupNames.push(matName);
 			_groupFacesPositions.push(new Vector.<uint>());
