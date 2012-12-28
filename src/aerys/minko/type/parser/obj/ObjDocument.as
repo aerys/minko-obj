@@ -747,6 +747,12 @@ package aerys.minko.type.parser.obj
 						tmpVertex[uint(tmpVertexComponentId++)] = _normals[uint(normalIndex + 1)];
 						tmpVertex[uint(tmpVertexComponentId++)] = _normals[uint(normalIndex + 2)];
 					}
+					else
+					{
+						tmpVertex[uint(tmpVertexComponentId++)] = 0;
+						tmpVertex[uint(tmpVertexComponentId++)] = 0;
+						tmpVertex[uint(tmpVertexComponentId++)] = 0;
+					}
 				}
 				
 				var joinedVertex	: String	= tmpVertex.join('|');
