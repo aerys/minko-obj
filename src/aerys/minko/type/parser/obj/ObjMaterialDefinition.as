@@ -5,14 +5,17 @@ package aerys.minko.type.parser.obj
 
 	public final class ObjMaterialDefinition
 	{
+		public var ambientExists	: Boolean		= false;
 		public var ambientR			: Number		= 1.;
 		public var ambientG			: Number		= 1.;
 		public var ambientB			: Number		= 1.;
 		
+		public var diffuseExists	: Boolean		= false;
 		public var diffuseR			: Number		= 1.;
 		public var diffuseG			: Number		= 1.;
 		public var diffuseB			: Number		= 1.;
 		
+		public var specularExists	: Boolean		= false;
 		public var specularR		: Number		= 1.;
 		public var specularG		: Number		= 1.;
 		public var specularB		: Number		= 1.;

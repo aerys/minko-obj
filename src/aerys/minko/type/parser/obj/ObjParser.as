@@ -89,8 +89,19 @@ package aerys.minko.type.parser.obj
                 
 				if (loader)
 				{
-					loader.complete.add(mtlCompleteHandler);
-					dependencies.push(loader);
+					if (loader is MtlLoader)
+					{
+						var mtlLoader	: MtlLoader	= MtlLoader(loader);
+						if (mtlLoader.isComplete)
+						{
+							mtlCompleteHandler(loader, mtlLoader.document);
+						}
+						else
+						{
+							loader.complete.add(mtlCompleteHandler);
+							dependencies.push(loader);
+						}
+					}
 				}
 			}
 			

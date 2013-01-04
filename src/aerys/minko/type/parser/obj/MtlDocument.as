@@ -331,6 +331,7 @@ package aerys.minko.type.parser.obj
 			_currentMaterial.ambientR = FLOAT_CONTAINER[0];
 			_currentMaterial.ambientG = FLOAT_CONTAINER[1];
 			_currentMaterial.ambientB = FLOAT_CONTAINER[2];
+			_currentMaterial.ambientExists = true;
 		}
 		
 		private function parseDiffuse(data : ByteArray) : void
@@ -344,6 +345,7 @@ package aerys.minko.type.parser.obj
 			_currentMaterial.diffuseR = FLOAT_CONTAINER[0];
 			_currentMaterial.diffuseG = FLOAT_CONTAINER[1];
 			_currentMaterial.diffuseB = FLOAT_CONTAINER[2];
+			_currentMaterial.diffuseExists = true;
 		}
 		
 		private function parseSpecular(data : ByteArray) : void
@@ -357,6 +359,7 @@ package aerys.minko.type.parser.obj
 			_currentMaterial.specularR = FLOAT_CONTAINER[0];
 			_currentMaterial.specularG = FLOAT_CONTAINER[1];
 			_currentMaterial.specularB = FLOAT_CONTAINER[2];
+			_currentMaterial.specularExists = true;
 		}
 		
 		private function parseAlpha(data : ByteArray) : void

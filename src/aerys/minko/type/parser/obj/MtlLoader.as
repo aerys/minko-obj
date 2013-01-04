@@ -29,6 +29,16 @@ package aerys.minko.type.parser.obj
         private var _loaderToMaterial	: Dictionary;
         private var _dependencyCounter  : uint;
         
+		public function get document():MtlDocument
+		{
+			return _document;
+		}
+
+		public function set document(value:MtlDocument):void
+		{
+			_document = value;
+		}
+
         public function get progress() : Signal
         {
             return _progress;
