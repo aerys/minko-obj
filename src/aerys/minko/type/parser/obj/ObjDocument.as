@@ -18,6 +18,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
 	import aerys.minko.type.math.HSLAMatrix4x4;
+	import aerys.minko.type.math.Vector4;
 	
 	import flash.utils.ByteArray;
 	import flash.utils.Endian;
@@ -563,17 +564,19 @@ package aerys.minko.type.parser.obj
 				material = new Material(_options.effect, null, groupName);
 				if (matDef)
 				{
-					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(.0, 1., 1., matDef.alpha);
 					
-					if (matDef.diffuseB != 1
-						|| matDef.diffuseG != 1
-						|| matDef.diffuseR != 1)
+					if (matDef.diffuseExists)
 					{
-						if (matDef.diffuseB != 0 && matDef.diffuseG != 0 && matDef.diffuseR != 0) 
-							diffuseTransform.appendScale(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB);
+						material.setProperty(BasicProperties.DIFFUSE_COLOR, new Vector4(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB));
 					}
-					
+					if (matDef.specularExists)
+					{
+						material.setProperty(PhongProperties.SPECULAR, new Vector4(matDef.specularR, matDef.specularG, matDef.specularB));
+					}
+
+					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(.0, 1., 1., matDef.alpha);
 					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, diffuseTransform);
+					
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
 					{
 						material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
