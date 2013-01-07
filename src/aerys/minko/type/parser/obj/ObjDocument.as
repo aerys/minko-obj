@@ -5,6 +5,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.render.geometry.GeometrySanitizer;
 	import aerys.minko.render.geometry.stream.IVertexStream;
 	import aerys.minko.render.geometry.stream.IndexStream;
+	import aerys.minko.render.geometry.stream.StreamUsage;
 	import aerys.minko.render.geometry.stream.VertexStream;
 	import aerys.minko.render.geometry.stream.format.VertexComponent;
 	import aerys.minko.render.geometry.stream.format.VertexFormat;
@@ -551,9 +552,9 @@ package aerys.minko.type.parser.obj
 		
 		private function createOrGetMaterial(meshId	: uint, matDef : ObjMaterialDefinition) : Material
 		{
-			var groupName : String = _groupNames[meshId];
-			var material : Material;
-			var color : uint;
+			var groupName	: String = _groupNames[meshId];
+			var material	: Material;
+			var color 		: uint;
 			
 			if (_materials[groupName])
 			{
@@ -561,10 +562,9 @@ package aerys.minko.type.parser.obj
 			}
 			else
 			{
-				material = new Material(_options.effect, null, groupName);
+				material = Material(_options.material.clone());
 				if (matDef)
 				{
-					
 					if (matDef.diffuseExists)
 					{
 						material.setProperty(BasicProperties.DIFFUSE_COLOR, new Vector4(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB));
@@ -592,6 +592,10 @@ package aerys.minko.type.parser.obj
 					if (matDef.alphaMapRef && matDef.alphaMap)
 					{
 						material.setProperty(BasicProperties.ALPHA_MAP, matDef.alphaMap);
+					}
+					
+					if (matDef.alpha < 1.0 || (matDef.alphaMapRef && matDef.alphaMap))
+					{
 						material.setProperty(BasicProperties.BLENDING, Blending.ALPHA);
 					}
 				}
@@ -651,7 +655,6 @@ package aerys.minko.type.parser.obj
 			vertexData.endian = Endian.LITTLE_ENDIAN;
 			fillBuffers(meshId, format, indexBuffer, vertexData);
 			
-			
 			indexBuffer.reverse();
 			vertexData.position = 0;
 			if (indexBuffer.length < INDEX_LIMIT && vertexData.length / format.numComponents < VERTEX_LIMIT)
@@ -660,7 +663,11 @@ package aerys.minko.type.parser.obj
 				vertexData.position 	= 0;
 				vertexStream			= new VertexStream(_options.vertexStreamUsage, format, vertexData);
 				
-				cleanGeometry(indexStream, vertexStream, format);
+				if (_options.vertexStreamUsage & (StreamUsage.READ | StreamUsage.WRITE) &&
+					_options.indexStreamUsage & (StreamUsage.READ | StreamUsage.WRITE))
+				{
+					cleanGeometry(indexStream, vertexStream, format);
+				}
 				
 				mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 				result.push(mesh);
