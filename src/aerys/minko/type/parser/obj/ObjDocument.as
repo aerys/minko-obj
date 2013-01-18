@@ -1,6 +1,7 @@
 package aerys.minko.type.parser.obj
 {
 	import aerys.minko.Minko;
+	import aerys.minko.ns.minko_stream;
 	import aerys.minko.render.geometry.Geometry;
 	import aerys.minko.render.geometry.GeometrySanitizer;
 	import aerys.minko.render.geometry.stream.IVertexStream;
@@ -626,19 +627,15 @@ package aerys.minko.type.parser.obj
 		
 		private function cleanGeometry(iStream : IndexStream, vStream : VertexStream, format : VertexFormat) : void
 		{
-			var vertexData		: ByteArray;
-			var indexData		: ByteArray;
+			var vertexData		: ByteArray	= vStream.minko_stream::_data;
+			var indexData		: ByteArray	= iStream.minko_stream::_data;
 			
-			vertexData = vStream.lock();
-			indexData = iStream.lock();
 			vertexData.position = 0;
 			indexData.position = 0;
 			GeometrySanitizer.removeUnusedVertices(vertexData, indexData, format.numBytesPerVertex);
 			vertexData.position = 0;
 			indexData.position = 0;
 			GeometrySanitizer.removeDuplicatedVertices(vertexData, indexData, format.numBytesPerVertex);
-			vStream.unlock();
-			iStream.unlock();
 		}
 		
 		private function createMeshes(meshId	: uint,
