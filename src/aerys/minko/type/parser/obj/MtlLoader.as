@@ -64,9 +64,9 @@ package aerys.minko.type.parser.obj
             _parserOptions = parserOptions;
             
             _isComplete 		= false;
-            _error				= new Signal('TextureLoader.error');
-            _progress			= new Signal('TextureLoader.progress');
-            _complete			= new Signal('TextureLoader.complete');
+            _error				= new Signal('MtlLoader.error');
+            _progress			= new Signal('MtlLoader.progress');
+            _complete			= new Signal('MtlLoader.complete');
             
             _document			= new MtlDocument();
             
