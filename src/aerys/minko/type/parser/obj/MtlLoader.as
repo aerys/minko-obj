@@ -1,14 +1,5 @@
 package aerys.minko.type.parser.obj
 {
-    import aerys.minko.render.resource.texture.TextureResource;
-    import aerys.minko.type.Signal;
-    import aerys.minko.type.loader.ILoader;
-    import aerys.minko.type.loader.parser.ParserOptions;
-    
-    import avmplus.getQualifiedClassName;
-    
-    import flash.display.Loader;
-    import flash.display3D.textures.Texture;
     import flash.events.Event;
     import flash.events.IOErrorEvent;
     import flash.events.ProgressEvent;
@@ -17,6 +8,13 @@ package aerys.minko.type.parser.obj
     import flash.net.URLRequest;
     import flash.utils.ByteArray;
     import flash.utils.Dictionary;
+    
+    import aerys.minko.render.resource.texture.TextureResource;
+    import aerys.minko.type.Signal;
+    import aerys.minko.type.loader.ILoader;
+    import aerys.minko.type.loader.parser.ParserOptions;
+    
+    import avmplus.getQualifiedClassName;
     
     public final class MtlLoader implements ILoader
     {

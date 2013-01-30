@@ -564,6 +564,7 @@ package aerys.minko.type.parser.obj
 			else
 			{
 				material = Material(_options.material.clone());
+				material.name = groupName;
 				if (matDef)
 				{
 					if (matDef.diffuseExists)

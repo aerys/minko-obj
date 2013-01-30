@@ -26,7 +26,7 @@ package aerys.minko.type.parser.obj
 		
 		public var diffuseMapRef	: String;
 		public var diffuseMap		: TextureResource;
-		public var alphaMap		: TextureResource;
+		public var alphaMap			: TextureResource;
 		public var alphaMapRef		: String;
 		public var lightMap			: TextureResource;
 		public var lightMapRef		: String;
