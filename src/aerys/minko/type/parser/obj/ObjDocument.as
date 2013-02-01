@@ -603,6 +603,8 @@ package aerys.minko.type.parser.obj
 				}
 				
 				_materials[groupName] = material;
+				if (_options.assets)
+					_options.assets.setMaterial(material.name, material);
 			}
 			
 			return material;
@@ -617,13 +619,16 @@ package aerys.minko.type.parser.obj
 			var vertexStreams 	: Vector.<IVertexStream>;
 			var geometry		: Geometry;
 			var material		: Material;
-
+			var mesh			: Mesh;
+			var name			: String	= _groupNames[meshId];
+			
 			vertexStreams 		= new Vector.<IVertexStream>(1);
 			vertexStreams[0] 	= vertexStream;
-			geometry 			= new Geometry(vertexStreams, indexStream);
+			geometry 			= new Geometry(vertexStreams, indexStream, 0, -1, name);
 			material 			= createOrGetMaterial(meshId, matDef);
+			mesh				= new Mesh(geometry, material, name);
 
-			return new Mesh(geometry, material, _groupNames[meshId]);
+			return mesh;
 		}
 		
 		private function cleanGeometry(iStream : IndexStream, vStream : VertexStream, format : VertexFormat) : void
@@ -669,6 +674,8 @@ package aerys.minko.type.parser.obj
 				
 				mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 				result.push(mesh);
+				if (_options.assets)
+					_options.assets.setGeometry(mesh.geometry.name, mesh.geometry);
 			}
 			else
 			{
@@ -693,6 +700,8 @@ package aerys.minko.type.parser.obj
 					
 					mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 					result.push(mesh);
+					if (_options.assets)
+						_options.assets.setGeometry(mesh.geometry.name, mesh.geometry);
 				}
 			}
 			
