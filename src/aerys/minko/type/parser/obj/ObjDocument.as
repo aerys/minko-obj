@@ -16,6 +16,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.scene.node.Group;
 	import aerys.minko.scene.node.Mesh;
 	import aerys.minko.type.enum.Blending;
+	import aerys.minko.type.enum.NormalMappingType;
 	import aerys.minko.type.error.obj.ObjError;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
@@ -569,14 +570,23 @@ package aerys.minko.type.parser.obj
 				{
 					if (matDef.diffuseExists)
 					{
-						material.setProperty(BasicProperties.DIFFUSE_COLOR, new Vector4(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB));
+						material.setProperty(
+                            BasicProperties.DIFFUSE_COLOR,
+                            new Vector4(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB)
+                        );
 					}
 					if (matDef.specularExists)
 					{
-						material.setProperty(PhongProperties.SPECULAR, new Vector4(matDef.specularR, matDef.specularG, matDef.specularB));
+						material.setProperty(
+                            PhongProperties.SPECULAR,
+                            new Vector4(matDef.specularR, matDef.specularG, matDef.specularB)
+                        );
 					}
 
-					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(.0, 1., 1., matDef.alpha);
+					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(
+                        .0, 1., 1., matDef.alpha
+                    );
+                    
 					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, diffuseTransform);
 					
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
@@ -590,6 +600,10 @@ package aerys.minko.type.parser.obj
 					if (matDef.normalMapRef && matDef.normalMap)
 					{
 						material.setProperty(PhongProperties.NORMAL_MAP, matDef.normalMap);
+                        material.setProperty(
+                            PhongProperties.NORMAL_MAPPING_TYPE,
+                            NormalMappingType.NORMAL
+                        );
 					}
 					if (matDef.alphaMapRef && matDef.alphaMap)
 					{
