@@ -113,6 +113,9 @@ package aerys.minko.type.parser.obj
 							case 0x65: // 'e'
 								gotoNextLine(data);
 								break;
+							case 0x6D : // 'm'
+								gotoNextLine(data);
+								break;
 							default:
 								throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean Ka, Kd or Ks?');
 						}
