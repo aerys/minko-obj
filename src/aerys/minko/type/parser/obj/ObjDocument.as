@@ -547,9 +547,13 @@ package aerys.minko.type.parser.obj
 			if (uvCounts != 0)
 			{
 				if (uvCounts != numIndices)
-					throw new ObjError('OBJ error: number of UVs and indices do not match');
-				
-				vertexFormat.addComponent(VertexComponent.UV);
+				{
+					Minko.log(DebugLevel.LOAD_ERROR, 'OBJ error: number of UVs and indices do not match');
+				}
+				else
+				{
+					vertexFormat.addComponent(VertexComponent.UV);
+				}
 			}
 
 			if (normalsCounts != 0)
