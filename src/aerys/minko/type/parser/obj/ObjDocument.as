@@ -66,6 +66,9 @@ package aerys.minko.type.parser.obj
 		private var _mtlFiles				: Vector.<String>;
 		private var _sceneName				: String;
 		private var _materials				: Object;
+		private var _groupNameList			: Array 	= [];
+		private var _geometryId 			: uint = 0;
+
 		
 		public function get isLoaded() : Boolean
 		{
@@ -181,7 +184,9 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					case 0x67: // "g"
-						gotoNextLine(data); // we ignore group instructions
+						eatSpaces(data);
+						pushGroupName(data);
+						//skipChars(data, 1);
 						break;
 					
 					case 0x75: // "u"
@@ -249,6 +254,23 @@ package aerys.minko.type.parser.obj
 			++_currentLine;
 		}
 		
+		private function pushGroupName(data : ByteArray) : void
+		{
+			var groupName 	: String = "";
+			var char 		: String = "";
+			
+			while ((char = data.readUTFBytes(1)) != '\n')
+				if (char != '\r')
+					groupName += char;
+						
+			if (groupName != "")
+			{
+				if (_groupNameList.indexOf(groupName) != -1)
+					groupName += "_"+_geometryId++;
+				_groupNameList.push(groupName);
+			}
+		}
+		
 		private function retrieveMaterial(data : ByteArray) : uint
 		{
 			var matName	: String = "";
@@ -264,8 +286,8 @@ package aerys.minko.type.parser.obj
 				
 			_groupNames.push(matName);
 			_groupFacesPositions.push(new Vector.<uint>());
-			_groupFacesUvs.push(new Vector.<uint>());
 			_groupFacesNormals.push(new Vector.<uint>());
+			_groupFacesUvs.push(new Vector.<uint>());
 			++_currentLine;
 
 			return materialId;
@@ -525,9 +547,13 @@ package aerys.minko.type.parser.obj
 			if (uvCounts != 0)
 			{
 				if (uvCounts != numIndices)
-					throw new ObjError('OBJ error: number of UVs and indices do not match');
-				
-				vertexFormat.addComponent(VertexComponent.UV);
+				{
+					Minko.log(DebugLevel.LOAD_ERROR, 'OBJ error: number of UVs and indices do not match');
+				}
+				else
+				{
+					vertexFormat.addComponent(VertexComponent.UV);
+				}
 			}
 
 			if (normalsCounts != 0)
@@ -624,6 +650,7 @@ package aerys.minko.type.parser.obj
 			return material;
 		}
 		
+		
 		private function createMesh(meshId 			: uint, 
 									matDef 			: ObjMaterialDefinition, 
 									format 			: VertexFormat, 
@@ -636,9 +663,11 @@ package aerys.minko.type.parser.obj
 			var mesh			: Mesh;
 			var name			: String	= _groupNames[meshId];
 			
+			var geometryName 	: String 	= _groupNameList.length > 0 ? _groupNameList.shift() : "geometry_" + _geometryId++;
+			
 			vertexStreams 		= new Vector.<IVertexStream>(1);
 			vertexStreams[0] 	= vertexStream;
-			geometry 			= new Geometry(vertexStreams, indexStream, 0, -1, name);
+			geometry 			= new Geometry(vertexStreams, indexStream, 0, -1, geometryName);
 			material 			= createOrGetMaterial(meshId, matDef);
 			mesh				= new Mesh(geometry, material, name);
 
