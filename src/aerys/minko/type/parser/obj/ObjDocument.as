@@ -16,6 +16,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.scene.node.Group;
 	import aerys.minko.scene.node.Mesh;
 	import aerys.minko.type.enum.Blending;
+	import aerys.minko.type.enum.NormalMappingType;
 	import aerys.minko.type.error.obj.ObjError;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
@@ -65,6 +66,9 @@ package aerys.minko.type.parser.obj
 		private var _mtlFiles				: Vector.<String>;
 		private var _sceneName				: String;
 		private var _materials				: Object;
+		private var _groupNameList			: Array 	= [];
+		private var _geometryId 			: uint = 0;
+
 		
 		public function get isLoaded() : Boolean
 		{
@@ -180,7 +184,9 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					case 0x67: // "g"
-						gotoNextLine(data); // we ignore group instructions
+						eatSpaces(data);
+						pushGroupName(data);
+						//skipChars(data, 1);
 						break;
 					
 					case 0x75: // "u"
@@ -248,6 +254,23 @@ package aerys.minko.type.parser.obj
 			++_currentLine;
 		}
 		
+		private function pushGroupName(data : ByteArray) : void
+		{
+			var groupName 	: String = "";
+			var char 		: String = "";
+			
+			while ((char = data.readUTFBytes(1)) != '\n')
+				if (char != '\r')
+					groupName += char;
+						
+			if (groupName != "")
+			{
+				if (_groupNameList.indexOf(groupName) != -1)
+					groupName += "_"+_geometryId++;
+				_groupNameList.push(groupName);
+			}
+		}
+		
 		private function retrieveMaterial(data : ByteArray) : uint
 		{
 			var matName	: String = "";
@@ -263,8 +286,8 @@ package aerys.minko.type.parser.obj
 				
 			_groupNames.push(matName);
 			_groupFacesPositions.push(new Vector.<uint>());
-			_groupFacesUvs.push(new Vector.<uint>());
 			_groupFacesNormals.push(new Vector.<uint>());
+			_groupFacesUvs.push(new Vector.<uint>());
 			++_currentLine;
 
 			return materialId;
@@ -524,9 +547,13 @@ package aerys.minko.type.parser.obj
 			if (uvCounts != 0)
 			{
 				if (uvCounts != numIndices)
-					throw new ObjError('OBJ error: number of UVs and indices do not match');
-				
-				vertexFormat.addComponent(VertexComponent.UV);
+				{
+					Minko.log(DebugLevel.LOAD_ERROR, 'OBJ error: number of UVs and indices do not match');
+				}
+				else
+				{
+					vertexFormat.addComponent(VertexComponent.UV);
+				}
 			}
 
 			if (normalsCounts != 0)
@@ -564,18 +591,28 @@ package aerys.minko.type.parser.obj
 			else
 			{
 				material = Material(_options.material.clone());
+				material.name = groupName;
 				if (matDef)
 				{
 					if (matDef.diffuseExists)
 					{
-						material.setProperty(BasicProperties.DIFFUSE_COLOR, new Vector4(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB));
+						material.setProperty(
+                            BasicProperties.DIFFUSE_COLOR,
+                            new Vector4(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB)
+                        );
 					}
 					if (matDef.specularExists)
 					{
-						material.setProperty(PhongProperties.SPECULAR, new Vector4(matDef.specularR, matDef.specularG, matDef.specularB));
+						material.setProperty(
+                            PhongProperties.SPECULAR,
+                            new Vector4(matDef.specularR, matDef.specularG, matDef.specularB)
+                        );
 					}
 
-					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(.0, 1., 1., matDef.alpha);
+					var diffuseTransform : HSLAMatrix4x4 = new HSLAMatrix4x4(
+                        .0, 1., 1., matDef.alpha
+                    );
+                    
 					material.setProperty(BasicProperties.DIFFUSE_TRANSFORM, diffuseTransform);
 					
 					if (matDef.diffuseMapRef && matDef.diffuseMap)
@@ -589,6 +626,10 @@ package aerys.minko.type.parser.obj
 					if (matDef.normalMapRef && matDef.normalMap)
 					{
 						material.setProperty(PhongProperties.NORMAL_MAP, matDef.normalMap);
+                        material.setProperty(
+                            PhongProperties.NORMAL_MAPPING_TYPE,
+                            NormalMappingType.NORMAL
+                        );
 					}
 					if (matDef.alphaMapRef && matDef.alphaMap)
 					{
@@ -602,10 +643,13 @@ package aerys.minko.type.parser.obj
 				}
 				
 				_materials[groupName] = material;
+				if (_options.assets)
+					_options.assets.setMaterial(material.name, material);
 			}
 			
 			return material;
 		}
+		
 		
 		private function createMesh(meshId 			: uint, 
 									matDef 			: ObjMaterialDefinition, 
@@ -616,13 +660,18 @@ package aerys.minko.type.parser.obj
 			var vertexStreams 	: Vector.<IVertexStream>;
 			var geometry		: Geometry;
 			var material		: Material;
-
+			var mesh			: Mesh;
+			var name			: String	= _groupNames[meshId];
+			
+			var geometryName 	: String 	= _groupNameList.length > 0 ? _groupNameList.shift() : "geometry_" + _geometryId++;
+			
 			vertexStreams 		= new Vector.<IVertexStream>(1);
 			vertexStreams[0] 	= vertexStream;
-			geometry 			= new Geometry(vertexStreams, indexStream);
+			geometry 			= new Geometry(vertexStreams, indexStream, 0, -1, geometryName);
 			material 			= createOrGetMaterial(meshId, matDef);
+			mesh				= new Mesh(geometry, material, name);
 
-			return new Mesh(geometry, material, _groupNames[meshId]);
+			return mesh;
 		}
 		
 		private function cleanGeometry(iStream : IndexStream, vStream : VertexStream, format : VertexFormat) : void
@@ -668,6 +717,8 @@ package aerys.minko.type.parser.obj
 				
 				mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 				result.push(mesh);
+				if (_options.assets)
+					_options.assets.setGeometry(mesh.geometry.name, mesh.geometry);
 			}
 			else
 			{
@@ -692,6 +743,8 @@ package aerys.minko.type.parser.obj
 					
 					mesh = createMesh(meshId, matDef, format, indexStream, vertexStream);
 					result.push(mesh);
+					if (_options.assets)
+						_options.assets.setGeometry(mesh.geometry.name, mesh.geometry);
 				}
 			}
 			

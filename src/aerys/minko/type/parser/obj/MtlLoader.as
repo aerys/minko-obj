@@ -7,8 +7,6 @@ package aerys.minko.type.parser.obj
     
     import avmplus.getQualifiedClassName;
     
-    import flash.display.Loader;
-    import flash.display3D.textures.Texture;
     import flash.events.Event;
     import flash.events.IOErrorEvent;
     import flash.events.ProgressEvent;
@@ -182,6 +180,8 @@ package aerys.minko.type.parser.obj
             if (material)
             {
                 material.diffuseMap = texture;
+				if (_parserOptions.assets)
+					_parserOptions.assets.setTexture(material.diffuseMapRef, texture);
             }
             
             _dependencyCounter -= 1;
@@ -198,7 +198,11 @@ package aerys.minko.type.parser.obj
             var material : ObjMaterialDefinition = _loaderToMaterial[loader];
             
             if (material)
+			{
                 material.specularMap = texture;
+				if (_parserOptions.assets)
+					_parserOptions.assets.setTexture(material.specularMapRef, texture);
+			}
             
             _dependencyCounter -= 1;
             if (_dependencyCounter == 0)
@@ -214,8 +218,12 @@ package aerys.minko.type.parser.obj
             var material : ObjMaterialDefinition = _loaderToMaterial[loader];
             
             if (material)
+			{
                 material.alphaMap = texture;
-            
+				if (_parserOptions.assets)
+					_parserOptions.assets.setTexture(material.alphaMapRef, texture);
+			}
+			
             _dependencyCounter -= 1;
             if (_dependencyCounter == 0)
             {
@@ -230,8 +238,12 @@ package aerys.minko.type.parser.obj
             var material : ObjMaterialDefinition = _loaderToMaterial[loader];
             
             if (material)
+			{
                 material.normalMap = texture;
-            
+				if (_parserOptions.assets)
+					_parserOptions.assets.setTexture(material.normalMapRef, texture);
+			}
+			
             _dependencyCounter -= 1;
             if (_dependencyCounter == 0)
             {
