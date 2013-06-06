@@ -2,11 +2,9 @@ package aerys.minko.type.parser.obj
 {
 	import aerys.minko.Minko;
 	import aerys.minko.type.error.obj.ObjError;
-	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
 	
 	import flash.utils.ByteArray;
-	import flash.utils.Dictionary;
 	import flash.utils.getTimer;
 
 	public final class MtlDocument
@@ -24,7 +22,7 @@ package aerys.minko.type.parser.obj
 		
 		private var _materials							: Object;
 		private var _currentMaterialName				: String;
-		private var _currentMaterial					: ObjMaterial;
+		private var _currentMaterial					: ObjMaterialDefinition;
 		
 		public function MtlDocument()
 		{
@@ -112,7 +110,10 @@ package aerys.minko.type.parser.obj
 								eatSpaces(data);
 								parseSpecular(data);
 								break;
-							case 0x65:
+							case 0x65: // 'e'
+								gotoNextLine(data);
+								break;
+							case 0x6D : // 'm'
 								gotoNextLine(data);
 								break;
 							default:
@@ -165,13 +166,36 @@ package aerys.minko.type.parser.obj
 						
 					case 0x6d: //'m'
 					{
-						if (data.readUTFBytes(4) == 'ap_K')
+						var utfBytes : String = data.readUTFBytes(4);
+						if (utfBytes == 'ap_K')
 						{
 							secondChar = data.readUnsignedByte();
 							if (secondChar == 0x64) //'d'
 							{
 								eatSpaces(data);
 								parseDiffuseMap(data);
+							}
+							else if (secondChar == 0x73) // 's'
+							{
+								eatSpaces(data);
+								parseSpecularMap(data);
+							}
+							else
+							{
+								gotoNextLine(data);
+							}
+						}
+						else if (utfBytes == 'ap_d')
+						{
+							eatSpaces(data);
+							parseAlphaMap(data);
+						}
+						else if (utfBytes == 'ap_b')
+						{
+							if (data.readUTFBytes(3) == 'ump')
+							{
+								eatSpaces(data);
+								parseNormalMap(data);
 							}
 							else
 							{
@@ -180,16 +204,15 @@ package aerys.minko.type.parser.obj
 						}
 						else
 						{
-							throw new ObjError('Line ' + _currentLine + ': unknown definition, did you mean "map_"?');
+							gotoNextLine(data);
 						}
 						
 						break;
 					}
 						
 					case 35: // "#"
-					case 0x73: // "s"
 					case 0x0d: // "\r"
-						gotoNextLine(data); // we ignore smoothing group instructions
+						gotoNextLine(data);
 						break;
 					
 					case 0x0a: // "\n"
@@ -198,7 +221,8 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					default:
-						throw new ObjError('Line ' + _currentLine + ': unknown definition, found ' + char);
+						gotoNextLine(data); // we ignore smoothing group instructions
+						break;
 				}
 			}
 		}
@@ -272,7 +296,7 @@ package aerys.minko.type.parser.obj
 					}
 				}
 				
-				destination.push(isPositive * currentDigits * TEN_POWERS[decimalOpPower]);
+				destination[i] = isPositive * currentDigits * TEN_POWERS[decimalOpPower];
 			}
 			
 			if (!eolReached)
@@ -295,10 +319,8 @@ package aerys.minko.type.parser.obj
 				throw new ObjError('Line ' + _currentLine + ': material redefinition');
 			}
 			
-			_currentMaterial = new ObjMaterial();
+			_currentMaterial = new ObjMaterialDefinition();
 			_materials[matName] = _currentMaterial;
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseAmbient(data : ByteArray) : void
@@ -312,6 +334,7 @@ package aerys.minko.type.parser.obj
 			_currentMaterial.ambientR = FLOAT_CONTAINER[0];
 			_currentMaterial.ambientG = FLOAT_CONTAINER[1];
 			_currentMaterial.ambientB = FLOAT_CONTAINER[2];
+			_currentMaterial.ambientExists = true;
 		}
 		
 		private function parseDiffuse(data : ByteArray) : void
@@ -325,8 +348,7 @@ package aerys.minko.type.parser.obj
 			_currentMaterial.diffuseR = FLOAT_CONTAINER[0];
 			_currentMaterial.diffuseG = FLOAT_CONTAINER[1];
 			_currentMaterial.diffuseB = FLOAT_CONTAINER[2];
-			
-			gotoNextLine(data);
+			_currentMaterial.diffuseExists = true;
 		}
 		
 		private function parseSpecular(data : ByteArray) : void
@@ -340,6 +362,7 @@ package aerys.minko.type.parser.obj
 			_currentMaterial.specularR = FLOAT_CONTAINER[0];
 			_currentMaterial.specularG = FLOAT_CONTAINER[1];
 			_currentMaterial.specularB = FLOAT_CONTAINER[2];
+			_currentMaterial.specularExists = true;
 		}
 		
 		private function parseAlpha(data : ByteArray) : void
@@ -351,8 +374,6 @@ package aerys.minko.type.parser.obj
 			}
 			
 			_currentMaterial.alpha = FLOAT_CONTAINER[0];
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseShininess(data : ByteArray) : void
@@ -364,8 +385,6 @@ package aerys.minko.type.parser.obj
 			}
 			
 			_currentMaterial.shininess = FLOAT_CONTAINER[0];
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseIllumination(data : ByteArray) : void
@@ -377,8 +396,6 @@ package aerys.minko.type.parser.obj
 			}
 			
 			_currentMaterial.illumination = FLOAT_CONTAINER[0];
-			
-			gotoNextLine(data);
 		}
 		
 		private function parseDiffuseMap(data : ByteArray) : void
@@ -398,8 +415,63 @@ package aerys.minko.type.parser.obj
 			}
 
 			_currentMaterial.diffuseMapRef = mapName;
+		}
+		
+		private function parseSpecularMap(data : ByteArray) : void
+		{
+			var mapName	: String = "";
+			var char	: String;
 			
-			gotoNextLine(data);
+			while ((char = data.readUTFBytes(1)) != '\n')
+			{
+				if (char != '\r')
+					mapName += char;
+			}
+			
+			if (_currentMaterial == null)
+			{
+				throw new ObjError('Line ' + _currentLine + ': no material found');
+			}
+
+			_currentMaterial.specularMapRef = mapName;
+		}
+		
+		private function parseAlphaMap(data : ByteArray) : void
+		{
+			var mapName	: String = "";
+			var char	: String;
+			
+			while ((char = data.readUTFBytes(1)) != '\n')
+			{
+				if (char != '\r')
+					mapName += char;
+			}
+			
+			if (_currentMaterial == null)
+			{
+				throw new ObjError('Line ' + _currentLine + ': no material found');
+			}
+
+			_currentMaterial.alphaMapRef = mapName;
+		}
+		
+		private function parseNormalMap(data : ByteArray) : void
+		{
+			var mapName	: String = "";
+			var char	: String;
+			
+			while ((char = data.readUTFBytes(1)) != '\n')
+			{
+				if (char != '\r')
+					mapName += char;
+			}
+			
+			if (_currentMaterial == null)
+			{
+				throw new ObjError('Line ' + _currentLine + ': no material found');
+			}
+
+			_currentMaterial.normalMapRef = mapName;
 		}
 	}
 }

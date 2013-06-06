@@ -1,6 +1,5 @@
 package aerys.minko.type.parser.obj
 {
-	import aerys.minko.scene.node.Group;
 	import aerys.minko.type.Signal;
 	import aerys.minko.type.loader.ILoader;
 	import aerys.minko.type.loader.parser.IParser;
@@ -23,9 +22,9 @@ package aerys.minko.type.parser.obj
 		public function ObjParser(options : ParserOptions)
 		{
 			_options			= options || new ParserOptions();
-			_progress			= new Signal('ColladaParser.progress');
-			_complete			= new Signal('ColladaParser.complete');
-			_error				= new Signal('ColladaParser.error');
+			_progress			= new Signal('ObjParser.progress');
+			_complete			= new Signal('ObjParser.complete');
+			_error				= new Signal('ObjParser.error');
 			_loaderToDependency	= new Dictionary();
 			_document			= new ObjDocument();
 		}
@@ -86,19 +85,31 @@ package aerys.minko.type.parser.obj
 			var dependencies : Vector.<ILoader> = new <ILoader>[];
 			for each (var mtl : String in _document.MtlFiles)
 			{
-				var loader		: ILoader	= _options.dependencyLoaderFunction(mtl, false, _options);
+				var loader	: ILoader	= _options.dependencyLoaderFunction(mtl, false, _options);
+                
 				if (loader)
 				{
-					loader.complete.add(onMtlCompleteHandler);
-					dependencies.push(loader);
+					if (loader is MtlLoader)
+					{
+						var mtlLoader	: MtlLoader	= MtlLoader(loader);
+						if (mtlLoader.isComplete)
+						{
+							mtlCompleteHandler(loader, mtlLoader.document);
+						}
+						else
+						{
+							loader.complete.add(mtlCompleteHandler);
+							dependencies.push(loader);
+						}
+					}
 				}
 			}
 			
 			return dependencies;
 		}
 		
-		private function onMtlCompleteHandler(loader	: ILoader,
-											  doc		: MtlDocument) : void
+		private function mtlCompleteHandler(loader	: ILoader,
+                                            doc		: MtlDocument) : void
 		{
 			_mtlDocument = doc;
 		}

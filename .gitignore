@@ -1,5 +1,6 @@
-/.actionScriptProperties
-/.flexLibProperties
-/.project
-/.settings/*
-/bin
+.actionScriptProperties
+.flexLibProperties
+.project
+.settings
+bin
+*.swc
