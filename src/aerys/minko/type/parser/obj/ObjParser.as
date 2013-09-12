@@ -85,7 +85,7 @@ package aerys.minko.type.parser.obj
 			var dependencies : Vector.<ILoader> = new <ILoader>[];
 			for each (var mtl : String in _document.MtlFiles)
 			{
-				var loader	: ILoader	= _options.dependencyLoaderFunction(mtl, false, _options);
+				var loader	: ILoader	= _options.dependencyLoaderFunction(mtl, mtl, false, _options);
                 
 				if (loader)
 				{
