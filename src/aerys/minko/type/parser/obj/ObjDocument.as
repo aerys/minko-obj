@@ -642,7 +642,7 @@ package aerys.minko.type.parser.obj
 					}
 				}
 				
-				material = _options.materialFunction
+				material = _options.materialFunction != null
 					? _options.materialFunction(material.name, material)
 					: material;
 				
