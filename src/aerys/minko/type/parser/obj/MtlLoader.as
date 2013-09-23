@@ -141,7 +141,7 @@ package aerys.minko.type.parser.obj
                 {
                     if (mapRef.ref && mapRef.callback)
                     {
-                        var loader : ILoader = _parserOptions.dependencyLoaderFunction(mapRef.ref, true, _parserOptions);
+                        var loader : ILoader = _parserOptions.dependencyLoaderFunction(mapRef.ref, mapRef.ref, true, _parserOptions);
                         if (loader)
                         {
                             _loaderToMaterial[loader] = material;
