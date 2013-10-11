@@ -341,6 +341,9 @@ package aerys.minko.type.parser.obj
 			if (lastReadChar != null)
 				lastReadChar[0] = readChar;
 
+			if (decimalOpPower > TEN_POWERS.length - 1)
+				decimalOpPower = TEN_POWERS.length - 1;
+			
 			return isPositive * currentDigits * TEN_POWERS[decimalOpPower];
 		}
 		
