@@ -1,9 +1,5 @@
 package aerys.minko.type.parser.obj
 {
-	import flash.utils.ByteArray;
-	import flash.utils.Dictionary;
-	import flash.utils.getTimer;
-	
 	import aerys.minko.Minko;
 	import aerys.minko.render.geometry.Geometry;
 	import aerys.minko.render.geometry.GeometrySanitizer;
@@ -11,6 +7,7 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.render.geometry.stream.IndexStream;
 	import aerys.minko.render.geometry.stream.StreamUsage;
 	import aerys.minko.render.geometry.stream.VertexStream;
+	import aerys.minko.render.geometry.stream.format.VertexComponent;
 	import aerys.minko.render.geometry.stream.format.VertexFormat;
 	import aerys.minko.render.material.Material;
 	import aerys.minko.render.material.basic.BasicProperties;
@@ -25,6 +22,10 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.type.loader.AssetsLibrary;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
+	
+	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
+	import flash.utils.getTimer;
 	
 	public final class ObjDocument
 	{
@@ -594,8 +595,13 @@ package aerys.minko.type.parser.obj
 				indexStreams[i].position = 0;
 				GeometrySanitizer.removeDuplicatedVertices(vertexStreams[i], indexStreams[i], vertexFormat.numBytesPerVertex);
 				GeometrySanitizer.removeUnusedVertices(vertexStreams[i], indexStreams[i], vertexFormat.numBytesPerVertex);
+				
+				changeHandedness(vertexStreams[i], vertexFormat, indexStreams[i]);
+				
 				var vertexStream 	: VertexStream 	= new VertexStream(_options.vertexStreamUsage, vertexFormat, vertexStreams[i]);
 				var indexStream 	: IndexStream 	= new IndexStream(_options.indexStreamUsage, indexStreams[i]);
+				
+				
 				var geometry 		: Geometry 		= new Geometry(new <IVertexStream>[vertexStream], indexStream);
 				var name 			: String 		= objectName;
 				
@@ -609,6 +615,99 @@ package aerys.minko.type.parser.obj
 			}
 			
 			return meshes;
+		}
+		
+		private function changeHandedness(vertexData	: ByteArray, 
+										  vertexFormat	: VertexFormat, 
+										  indexData		: ByteArray) : void
+		{
+			changeVertexHandedness(vertexData, vertexFormat);
+			changeIndexWinding(indexData);
+		}
+		
+		private function changeVertexHandedness(vertexData		: ByteArray, 
+												vertexFormat	: VertexFormat) : void
+		{
+			var vertexSize		: uint	= vertexFormat.numBytesPerVertex;
+			
+			if (vertexSize == 0)
+				return;
+			
+			var numVertices		: uint	= vertexData.length / vertexSize;
+			var offsetXYZ		: int 	= vertexFormat.hasComponent(VertexComponent.XYZ)		? vertexFormat.getBytesOffsetForComponent(VertexComponent.XYZ)		: -1;
+			var offsetNormal	: int	= vertexFormat.hasComponent(VertexComponent.NORMAL)		? vertexFormat.getBytesOffsetForComponent(VertexComponent.NORMAL)	: -1;
+			var offsetTangent	: int	= vertexFormat.hasComponent(VertexComponent.TANGENT)	? vertexFormat.getBytesOffsetForComponent(VertexComponent.TANGENT)	: -1;
+			var offsetTexCoords	: int	= vertexFormat.hasComponent(VertexComponent.UV)			? vertexFormat.getBytesOffsetForComponent(VertexComponent.UV)		: -1;
+			
+			var vertexStartPos	: uint 		= 0;
+			var componentValue	: Number	= 0.0;
+			
+			for (var vertexId:uint = 0; vertexId < numVertices; ++vertexId)
+			{
+				// x -> -x
+				if (offsetXYZ >= 0)
+				{
+					vertexData.position = vertexStartPos + offsetXYZ;
+					componentValue		= vertexData.readFloat();
+					vertexData.position	-= 4;
+					vertexData.writeFloat(-componentValue);
+				}
+
+				// nx -> -nx
+				if (offsetNormal >= 0)
+				{
+					vertexData.position = vertexStartPos + offsetNormal;
+					componentValue		= vertexData.readFloat();
+					vertexData.position	-= 4;
+					vertexData.writeFloat(-componentValue);
+				}
+				
+				// tx -> -tx
+				if (offsetTangent >= 0)
+				{
+					vertexData.position = vertexStartPos + offsetTangent;
+					componentValue		= vertexData.readFloat();
+					vertexData.position	-= 4;
+					vertexData.writeFloat(-componentValue);
+				}
+				
+				// v -> 1 - v
+				if (offsetTexCoords >= 0)
+				{
+					vertexData.position = vertexStartPos + offsetTexCoords + 4;
+					componentValue		= vertexData.readFloat();
+					vertexData.position	-= 4;
+					vertexData.writeFloat(1.0 - componentValue);
+				}
+				
+				vertexStartPos += vertexSize;
+			}
+			
+			vertexData.position = 0;
+		}
+		
+		private function changeIndexWinding(indexData : ByteArray) : void
+		{
+			var length	: uint	= indexData.length;
+			var offset	: uint	= 0;
+			
+			indexData.position = offset;
+			
+			while (offset < length)
+			{
+				var idx1	: uint	= indexData.readUnsignedShort();
+				var idx2	: uint	= indexData.readUnsignedShort();
+				var idx3	: uint	= indexData.readUnsignedShort();
+				
+				indexData.position	-= 4;
+				
+				indexData.writeShort(idx3);
+				indexData.writeShort(idx2);
+				
+				offset += 6;
+			}
+			
+			indexData.position = 0;
 		}
 		
 		private function toRGBA(r : Number, g : Number, b : Number, a : Number) : uint
