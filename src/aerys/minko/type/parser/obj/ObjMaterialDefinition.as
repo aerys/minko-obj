@@ -21,8 +21,8 @@ package aerys.minko.type.parser.obj
 		public var specularB		: Number		= 1.;
 		
 		public var alpha			: Number		= 1.;
-		public var shininess		: Number;
-		public var illumination		: int;
+		public var shininess		: Number		= 1.;
+		public var illumination		: int			= 1;
 		
 		public var diffuseMapRef	: String;
 		public var diffuseMap		: TextureResource;

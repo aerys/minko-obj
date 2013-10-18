@@ -10,9 +10,20 @@ package aerys.minko.type.parser.obj
 	public final class MtlDocument
 	{
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
-			1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001,
-			0.0000001, 0.00000001, 0.000000001, 0.0000000001,
-			0.00000000001, 0.000000000001, 0.0000000000001
+			1, 
+			0.1, 
+			0.01, 
+			0.001, 
+			0.0001, 
+			0.00001, 
+			0.000001,
+			0.0000001, 
+			0.00000001, 
+			0.000000001, 
+			0.0000000001,
+			0.00000000001, 
+			0.000000000001, 
+			0.0000000000001
 		]);
 		
 		private static const FLOAT_CONTAINER			: Vector.<Number> = Vector.<Number>([0, 0, 0]);
@@ -21,7 +32,6 @@ package aerys.minko.type.parser.obj
 		private var _isLoaded							: Boolean;
 		
 		private var _materials							: Object;
-		private var _currentMaterialName				: String;
 		private var _currentMaterial					: ObjMaterialDefinition;
 		
 		public function MtlDocument()
