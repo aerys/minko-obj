@@ -206,7 +206,7 @@ package aerys.minko.type.parser.obj
 							
 				objItem.surfaceId = surfaceId;
 							
-				//_queue.push(objItem);
+				_queue.push(objItem);
 			}
 		}
 		
@@ -373,18 +373,28 @@ package aerys.minko.type.parser.obj
 			}
 			
 			var faceArray 	: Array = faceString.split(" ");
-			var t1 			: Array = faceArray[0].split("/");
-			var t2  		: Array = faceArray[1].split("/");
-			var t3			: Array = faceArray[2].split("/");
 			
-			var objItem : ObjItem = new ObjItem(ObjItem.FACE);
+			for (var j : int = faceArray.length; j >= 0; --j)
+			{
+				if (faceArray[j] == "")
+					faceArray.splice(j, 1);
+			}
 			
-			objItem.xyzId 		= [parseInt(t1[0]),	parseInt(t2[0]), parseInt(t3[0])];
-			objItem.uvId 		= [parseInt(t1[1]), parseInt(t2[1]), parseInt(t3[1])];
-			objItem.normalId 	= [parseInt(t1[2]), parseInt(t2[2]), parseInt(t3[2])];
-			objItem.name		= faceString;
+			for (var i : uint = 0; i + 2 < faceArray.length; i++)
+			{
+				var t1 			: Array = faceArray[0].split("/");
+				var t2  		: Array = faceArray[i + 1].split("/");
+				var t3			: Array = faceArray[i + 2].split("/");
 			
-			_queue.push(objItem);
+				var objItem : ObjItem = new ObjItem(ObjItem.FACE);
+			
+				objItem.xyzId 		= [parseInt(t1[0]),	parseInt(t2[0]), parseInt(t3[0])];
+				objItem.uvId 		= [parseInt(t1[1]), parseInt(t2[1]), parseInt(t3[1])];
+				objItem.normalId 	= [parseInt(t1[2]), parseInt(t2[2]), parseInt(t3[2])];
+				objItem.name		= faceString;
+			
+				_queue.push(objItem);
+			}
 		}
 		
 		public function createScene(mtlDoc : MtlDocument)	: Group
