@@ -1,5 +1,9 @@
 package aerys.minko.type.parser.obj
 {
+	import flash.utils.ByteArray;
+	import flash.utils.Dictionary;
+	import flash.utils.getTimer;
+	
 	import aerys.minko.Minko;
 	import aerys.minko.render.geometry.Geometry;
 	import aerys.minko.render.geometry.GeometrySanitizer;
@@ -22,10 +26,6 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.type.loader.AssetsLibrary;
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
-	
-	import flash.utils.ByteArray;
-	import flash.utils.Dictionary;
-	import flash.utils.getTimer;
 	
 	public final class ObjDocument
 	{
@@ -200,14 +200,14 @@ package aerys.minko.type.parser.obj
 			
 			var surfaceId : int = parseInt(surfaceName);
 			
-			if (!isNaN(surfaceId))
+			/*if (!isNaN(surfaceId))
 			{
 				var objItem : ObjItem = new ObjItem(ObjItem.SURFACE);
 							
 				objItem.surfaceId = surfaceId;
 							
 				_queue.push(objItem);
-			}
+			}*/
 		}
 		
 		private function parseObjectName(data:ByteArray):void
@@ -388,6 +388,8 @@ package aerys.minko.type.parser.obj
 			
 				var objItem : ObjItem = new ObjItem(ObjItem.FACE);
 			
+				
+				
 				objItem.xyzId 		= [parseInt(t1[0]),	parseInt(t2[0]), parseInt(t3[0])];
 				objItem.uvId 		= [parseInt(t1[1]), parseInt(t2[1]), parseInt(t3[1])];
 				objItem.normalId 	= [parseInt(t1[2]), parseInt(t2[2]), parseInt(t3[2])];
@@ -402,8 +404,12 @@ package aerys.minko.type.parser.obj
 			if (!_isLoaded)
 				return null;
 			
+			
 			var assets 						: AssetsLibrary 	= new AssetsLibrary();
 			var result 						: Group 			= new Group();
+
+//			try
+//			{	
 			var currentIndexStream			: Vector.<uint> 	= new Vector.<uint>();
 			var currentVertexStream 		: Vector.<Number>	= new Vector.<Number>();
 			var currentObjectName 			: String 			= null;
@@ -481,6 +487,9 @@ package aerys.minko.type.parser.obj
 							var uvIndex 	: uint = vertice0Id[1] - 1;
 							var nIndex 		: uint = vertice0Id[2] - 1;
 							
+							if (vertice0Id.length == 0 || vertice0Id[1] == 0)
+								uvIndex = 0;
+							
 							if (_normals.length > 0)
 							{
 								currentVertexStream.push(
@@ -504,6 +513,9 @@ package aerys.minko.type.parser.obj
 							var xyzIndex 	: uint = vertice1Id[0] - 1;
 							var uvIndex 	: uint = vertice1Id[1] - 1;
 							var nIndex 		: uint = vertice1Id[2] - 1;
+							
+							if (vertice1Id.length == 0 || vertice1Id[1] == 0)
+								uvIndex = 0;
 							
 							if (_normals.length > 0)
 								
@@ -529,6 +541,9 @@ package aerys.minko.type.parser.obj
 							var xyzIndex 	: uint = vertice2Id[0] - 1;
 							var uvIndex 	: uint = vertice2Id[1] - 1;
 							var nIndex 		: uint = vertice2Id[2] - 1;
+							
+							if (vertice2Id.length == 0 || vertice2Id[1] == 0)
+								uvIndex = 0;
 							
 							if (_normals.length > 0)
 							{
@@ -575,7 +590,11 @@ package aerys.minko.type.parser.obj
 						break;
 				}
 			}
-			
+//			}
+//			catch (e : Error)
+//			{
+//				Minko.log(DebugLevel.PLUGIN_ERROR, "non valid obj file");
+//			}
 			return result;
 		}
 		
