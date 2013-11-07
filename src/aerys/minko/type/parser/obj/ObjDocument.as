@@ -27,6 +27,8 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
 	
+	import flashx.textLayout.events.DamageEvent;
+	
 	public final class ObjDocument
 	{
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
@@ -200,14 +202,17 @@ package aerys.minko.type.parser.obj
 			
 			var surfaceId : int = parseInt(surfaceName);
 			
-			/*if (!isNaN(surfaceId))
+			if (isNaN(surfaceId))
+				surfaceId = 0;
+			
+			if (!isNaN(surfaceId))
 			{
 				var objItem : ObjItem = new ObjItem(ObjItem.SURFACE);
 							
 				objItem.surfaceId = surfaceId;
 							
 				_queue.push(objItem);
-			}*/
+			}
 		}
 		
 		private function parseObjectName(data:ByteArray):void
@@ -410,16 +415,22 @@ package aerys.minko.type.parser.obj
 
 //			try
 //			{	
-			var currentIndexStream			: Vector.<uint> 	= new Vector.<uint>();
-			var currentVertexStream 		: Vector.<Number>	= new Vector.<Number>();
 			var currentObjectName 			: String 			= null;
 			var numObjItem 					: uint 				= _queue.length;
 			var currentGroup 				: Group 			= null;
 			var currentMaterial 			: Material 			= null;
 			var signatureToIndex			: Dictionary		= new Dictionary();
-			var currentIndex 				: uint 				= 0;
 			var maxIndice 					: uint 				= _positions.length / 3;
-			var vertexFormat 				: VertexFormat		= (_normals.length > 0) ? VertexFormat.XYZ_UV_NORMAL : VertexFormat.XYZ_UV;
+			
+			var numNormals					: uint 				= _normals.length;
+			var numUvs 						: uint 				= _uvs.length;
+			
+			var surfaceIdToVertexStream		: Dictionary		= new Dictionary();
+			var surfaceIdToIndexStream 		: Dictionary		= new Dictionary();
+			var surfaceIdToVertexFormat 	: Dictionary		= new Dictionary();
+			var surfaceIdToIndex			: Dictionary		= new Dictionary();
+			
+			var currentSurfaceId 			: int 				= 0;
 			
 			if (_options.assets != null)
 				assets = _options.assets;
@@ -464,48 +475,102 @@ package aerys.minko.type.parser.obj
 						break;
 					
 					case ObjItem.FACE:
-						var name 		: String		= objItem.name;
+						
+						if (surfaceIdToIndexStream[currentSurfaceId] == null)
+						{
+							surfaceIdToIndexStream[currentSurfaceId] 	= new Vector.<uint>();
+							surfaceIdToVertexStream[currentSurfaceId] 	= new Vector.<Number>();
+							signatureToIndex[currentSurfaceId] 			= new Dictionary();
+							surfaceIdToIndex[currentSurfaceId] 			= 0;
+							
+							var components : Array = [];
+							
+							components.push(VertexComponent.XYZ);
+							
+							if (objItem.uvId[0] != 0 && _uvs.length != 0)
+								components.push(VertexComponent.UV);
+							if (objItem.normalId[0] != 0 && _normals.length != 0)
+								components.push(VertexComponent.NORMAL);
+							
+							surfaceIdToVertexFormat[currentSurfaceId] = new VertexFormat();
+							
+							for each (var c : VertexComponent in components)
+								VertexFormat(surfaceIdToVertexFormat[currentSurfaceId]).addComponent(c);
+						}
+						
+						var indexStream 	: Vector.<uint> 	= surfaceIdToIndexStream[currentSurfaceId];
+						var vertexStream	: Vector.<Number> 	= surfaceIdToVertexStream[currentSurfaceId];
+						var format 			: VertexFormat		= surfaceIdToVertexFormat[currentSurfaceId];
+						
 						var xyz 		: Array 		= objItem.xyzId;
 						var normal 		: Array 		= objItem.normalId;
 						var uv 			: Array 		= objItem.uvId;
+						
 						var vertice0Id	: Vector.<uint> = new Vector.<uint>(); vertice0Id.push(xyz[0], uv[0], normal[0]); 
 						var vertice1Id	: Vector.<uint> = new Vector.<uint>(); vertice1Id.push(xyz[1], uv[1], normal[1]);
 						var vertice2Id 	: Vector.<uint> = new Vector.<uint>(); vertice2Id.push(xyz[2], uv[2], normal[2]);
+						
 						var signature0 	: uint 			= CRC32.computeForUintVector(vertice0Id);
 						var signature1	: uint 			= CRC32.computeForUintVector(vertice1Id);
 						var signature2 	: uint 			= CRC32.computeForUintVector(vertice2Id);
+						
+						var vertexIds	: Array = [vertice0Id, vertice1Id, vertice2Id];
+						var signatures 	: Array = [signature0, signature1, signature2];
+						var indexList 	: Array = [0, 0, 0];
 						
 						var index0 	: uint = 0;
 						var index1 	: uint = 0;
 						var index2 	: uint = 0;
 							
-						if (signatureToIndex[signature0] != null)
-							index0 = signatureToIndex[signature0];
-						else
+						for (var j : uint = 0; j < 3; ++j)
 						{
-							var xyzIndex 	: uint = vertice0Id[0] - 1;
-							var uvIndex 	: uint = vertice0Id[1] - 1;
-							var nIndex 		: uint = vertice0Id[2] - 1;
-							
-							if (vertice0Id.length == 0 || vertice0Id[1] == 0)
-								uvIndex = 0;
-							
-							if (_normals.length > 0)
-							{
-								currentVertexStream.push(
-									_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-									_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)],
-									_normals[uint(nIndex * 3)], _normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
-							}
+							if (signatureToIndex[currentSurfaceId][signatures[j]] != null)
+								indexList[j] = signatureToIndex[currentSurfaceId][signatures[j]];
 							else
-								currentVertexStream.push(
-									_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-									_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)]);
-							
-							index0 = currentIndex++;
-							signatureToIndex[signature0] = index0;
+							{
+								var verticeId 	: Vector.<uint> = vertexIds[j];
+								var xyzIndex 	: uint 			= verticeId[0] - 1;
+								var uvIndex 	: uint 			= verticeId[1] - 1;
+								var nIndex 		: uint 			= verticeId[2] - 1;
+								
+								if (verticeId.length == 0 || verticeId[1] == 0)
+									uvIndex = 0;
+								
+								vertexStream.push(_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)]);
+								
+								if (format.hasComponent(VertexComponent.UV))
+								{
+									if (uvIndex * 2 >= _uvs.length)
+										vertexStream.push(0, 0);
+									else
+										vertexStream.push(_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)]);
+								}
+								
+								if (format.hasComponent(VertexComponent.NORMAL))
+								{
+									if (nIndex * 3 >= _normals.length)
+										vertexStream.push(0, 1, 0);
+									else
+										vertexStream.push(_normals[uint(nIndex * 3)], _normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
+								}
+									/*
+								if (_normals.length > 0)
+								{
+									currentVertexStream.push(
+										_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
+										_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)],
+										_normals[uint(nIndex * 3)], _normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
+								}
+								else
+									currentVertexStream.push(
+										_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
+										_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)]);
+								*/
+								indexList[j] = surfaceIdToIndex[currentSurfaceId]++;
+								signatureToIndex[currentSurfaceId][signatures[j]] = indexList[j];
+							}
 						}
-						
+						/*
 						if (signatureToIndex[signature1] != null)
 							index1 = signatureToIndex[signature1];
 						else
@@ -559,34 +624,38 @@ package aerys.minko.type.parser.obj
 							
 							index2 = currentIndex++;
 							signatureToIndex[signature2] = index2;
-						}
+						}*/
 						
-						currentIndexStream.push(index0, index2, index1);
+						//currentIndexStream.push(index0, index2, index1);
+						indexStream.push(indexList[0], indexList[2], indexList[1]);
 						
-						
-						if (i == numObjItem - 1 || _queue[i + 1].type != ObjItem.FACE)
+						if (i == numObjItem - 1 || (_queue[i + 1].type != ObjItem.FACE && _queue[i + 1].type != ObjItem.SURFACE && _queue[i + 1].type != ObjItem.MTL))
 						{
 							if (currentGroup == null)
 								currentGroup = result;
 							
-							var meshes : Vector.<Mesh> = buildMeshes(currentIndexStream, currentVertexStream, vertexFormat, currentMaterial, currentObjectName);
-							
-							for each (var mesh : Mesh in meshes)
+							for (var key : * in surfaceIdToIndexStream)
 							{
-								currentGroup.addChild(mesh);
-								assets.setGeometry(mesh.name + "_geometry", mesh.geometry);
-							}
+								var meshes : Vector.<Mesh> = buildMeshes(surfaceIdToIndexStream[key], surfaceIdToVertexStream[key], surfaceIdToVertexFormat[key], currentMaterial, currentObjectName + key);
 							
-							currentObjectName = null;
-							currentVertexStream.length = 0;
-							currentIndex = 0;
-							signatureToIndex = new Dictionary();
-							currentIndexStream.length = 0;
+								for each (var mesh : Mesh in meshes)
+								{
+									currentGroup.addChild(mesh);
+									assets.setGeometry(mesh.name + "_geometry", mesh.geometry);
+								}
+							}
+							currentObjectName 		= null;
+							surfaceIdToIndexStream 	= new Dictionary();
+							surfaceIdToVertexStream = new Dictionary();
+							surfaceIdToVertexFormat = new Dictionary();
+							signatureToIndex 		= new Dictionary();
+							surfaceIdToIndex		= new Dictionary();
 						}
 						
 						break;
 					
 					case ObjItem.SURFACE:
+						currentSurfaceId = objItem.surfaceId;
 						break;
 				}
 			}
@@ -594,6 +663,8 @@ package aerys.minko.type.parser.obj
 //			catch (e : Error)
 //			{
 //				Minko.log(DebugLevel.PLUGIN_ERROR, "non valid obj file");
+//				
+//				result = new Group();
 //			}
 			return result;
 		}
