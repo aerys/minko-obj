@@ -464,6 +464,8 @@ package aerys.minko.type.parser.obj
 						
 						if (currentMaterial == null)
 						{
+							if (mtlDoc == null)
+								mtlDoc = new MtlDocument();
 							currentMaterial = createOrGetMaterial(mtlDoc.materials[materialName], materialName);
 							assets.setMaterial(materialName, currentMaterial);
 						}
@@ -553,80 +555,11 @@ package aerys.minko.type.parser.obj
 									else
 										vertexStream.push(_normals[uint(nIndex * 3)], _normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
 								}
-									/*
-								if (_normals.length > 0)
-								{
-									currentVertexStream.push(
-										_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-										_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)],
-										_normals[uint(nIndex * 3)], _normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
-								}
-								else
-									currentVertexStream.push(
-										_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-										_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)]);
-								*/
 								indexList[j] = surfaceIdToIndex[currentSurfaceId]++;
 								signatureToIndex[currentSurfaceId][signatures[j]] = indexList[j];
 							}
 						}
-						/*
-						if (signatureToIndex[signature1] != null)
-							index1 = signatureToIndex[signature1];
-						else
-						{
-							var xyzIndex 	: uint = vertice1Id[0] - 1;
-							var uvIndex 	: uint = vertice1Id[1] - 1;
-							var nIndex 		: uint = vertice1Id[2] - 1;
-							
-							if (vertice1Id.length == 0 || vertice1Id[1] == 0)
-								uvIndex = 0;
-							
-							if (_normals.length > 0)
-								
-							{
-								currentVertexStream.push(
-									_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-									_uvs[uint(uvIndex * 2)], 		_uvs[uint(uvIndex * 2 + 1)],
-									_normals[uint(nIndex * 3)], 	_normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
-							}
-							else
-								currentVertexStream.push(
-									_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-									_uvs[uint(uvIndex * 2)], 		_uvs[uint(uvIndex * 2 + 1)]);
-							
-							index1 = currentIndex++;
-							signatureToIndex[signature1] = index1;
-						}
 						
-						if (signatureToIndex[signature2] != null)
-							index2 = signatureToIndex[signature2];
-						else
-						{
-							var xyzIndex 	: uint = vertice2Id[0] - 1;
-							var uvIndex 	: uint = vertice2Id[1] - 1;
-							var nIndex 		: uint = vertice2Id[2] - 1;
-							
-							if (vertice2Id.length == 0 || vertice2Id[1] == 0)
-								uvIndex = 0;
-							
-							if (_normals.length > 0)
-							{
-								currentVertexStream.push(
-									_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-									_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)],
-									_normals[uint(nIndex * 3)], _normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
-							}
-							else
-								currentVertexStream.push(
-									_positions[uint(xyzIndex * 3)], _positions[uint(xyzIndex * 3 + 1)], _positions[uint(xyzIndex * 3 + 2)],
-									_uvs[uint(uvIndex * 2)], _uvs[uint(uvIndex * 2 + 1)]);
-							
-							index2 = currentIndex++;
-							signatureToIndex[signature2] = index2;
-						}*/
-						
-						//currentIndexStream.push(index0, index2, index1);
 						indexStream.push(indexList[0], indexList[2], indexList[1]);
 						
 						if (i == numObjItem - 1 || (_queue[i + 1].type != ObjItem.FACE && _queue[i + 1].type != ObjItem.SURFACE && _queue[i + 1].type != ObjItem.MTL))
