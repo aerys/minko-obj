@@ -413,8 +413,8 @@ package aerys.minko.type.parser.obj
 			var assets 						: AssetsLibrary 	= new AssetsLibrary();
 			var result 						: Group 			= new Group();
 
-//			try
-//			{	
+			try
+			{	
 			var currentObjectName 			: String 			= null;
 			var numObjItem 					: uint 				= _queue.length;
 			var currentGroup 				: Group 			= null;
@@ -549,7 +549,7 @@ package aerys.minko.type.parser.obj
 								if (format.hasComponent(VertexComponent.NORMAL))
 								{
 									if (nIndex * 3 >= _normals.length)
-										vertexStream.push(0, 1, 0);
+										vertexStream.push(1, 1, 0);
 									else
 										vertexStream.push(_normals[uint(nIndex * 3)], _normals[uint(nIndex * 3 + 1)], _normals[uint(nIndex * 3 + 2)]);
 								}
@@ -659,13 +659,13 @@ package aerys.minko.type.parser.obj
 						break;
 				}
 			}
-//			}
-//			catch (e : Error)
-//			{
-//				Minko.log(DebugLevel.PLUGIN_ERROR, "non valid obj file");
-//				
-//				result = new Group();
-//			}
+			}
+			catch (e : Error)
+			{
+				Minko.log(DebugLevel.PLUGIN_ERROR, "non valid obj file");
+				
+				result = new Group();
+			}
 			return result;
 		}
 		
