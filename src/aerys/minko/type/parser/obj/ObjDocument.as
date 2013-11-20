@@ -789,6 +789,10 @@ package aerys.minko.type.parser.obj
 					material.setProperty(BasicProperties.BLENDING, Blending.ALPHA);
 				
 			}
+			else
+			{
+				material.diffuseColor = 0xFFFFFFFF;
+			}
 			
 			return material;
 		}
