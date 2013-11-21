@@ -1,11 +1,11 @@
 package aerys.minko.type.parser.obj
 {
+	import flash.utils.ByteArray;
+	import flash.utils.getTimer;
+	
 	import aerys.minko.Minko;
 	import aerys.minko.type.error.obj.ObjError;
 	import aerys.minko.type.log.DebugLevel;
-	
-	import flash.utils.ByteArray;
-	import flash.utils.getTimer;
 
 	public final class MtlDocument
 	{
@@ -81,12 +81,21 @@ package aerys.minko.type.parser.obj
 		{
 			data.position = 0;
 			
+			var ef : uint = data.readUnsignedByte();
+			var bb : uint = data.readUnsignedByte();
+			var bf : uint = data.readUnsignedByte();
+			
+			if (!(ef == 0xEF && bb == 0xBB && bf == 0xBF))
+				data.position = 0;
+				
+			
 			var currentMaterialId : uint = 0;
 			while (data.position != data.length)
 			{
-				var char		: uint;
-				var secondChar	: uint
-				switch (char = data.readUnsignedByte())
+				var char		: uint = data.readUnsignedByte();
+				var secondChar	: uint;
+				
+				switch (char)
 				{
 					case 0x6e: // n
 					{
@@ -254,6 +263,7 @@ package aerys.minko.type.parser.obj
 		{
 			while (data.readUnsignedByte() != 0x0a)
 				continue;
+			
 			++_currentLine;
 		}
 
@@ -324,13 +334,16 @@ package aerys.minko.type.parser.obj
 					matName += char;
 			}
 			
-			if ((_currentMaterial = _materials[matName]))
-			{
-				throw new ObjError('Line ' + _currentLine + ': material redefinition');
-			}
+			var numCharacter : uint = matName.length;
 			
-			_currentMaterial = new ObjMaterialDefinition();
-			_materials[matName] = _currentMaterial;
+			for (var i : int =  numCharacter - 1; i >= 0 && matName.charAt(i) == " "; i--)
+				matName = matName.substring(0, i);
+			
+			if (_materials[matName] == null)
+				_materials[matName] = new ObjMaterialDefinition();
+			else
+				Minko.log(DebugLevel.PLUGIN_WARNING, " material redefinition : " + matName);
+			_currentMaterial = _materials[matName];
 		}
 		
 		private function parseAmbient(data : ByteArray) : void

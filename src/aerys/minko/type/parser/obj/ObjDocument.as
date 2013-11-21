@@ -27,8 +27,6 @@ package aerys.minko.type.parser.obj
 	import aerys.minko.type.loader.parser.ParserOptions;
 	import aerys.minko.type.log.DebugLevel;
 	
-	import flashx.textLayout.events.DamageEvent;
-	
 	public final class ObjDocument
 	{
 		private static const TEN_POWERS					: Vector.<Number> = Vector.<Number>([
@@ -466,6 +464,7 @@ package aerys.minko.type.parser.obj
 						{
 							if (mtlDoc == null)
 								mtlDoc = new MtlDocument();
+							trace(materialName, mtlDoc.materials.hasOwnProperty(materialName));
 							currentMaterial = createOrGetMaterial(mtlDoc.materials[materialName], materialName);
 							assets.setMaterial(materialName, currentMaterial);
 						}
@@ -768,7 +767,7 @@ package aerys.minko.type.parser.obj
 					material.setProperty(BasicProperties.DIFFUSE_COLOR, toRGBA(matDef.diffuseR, matDef.diffuseG, matDef.diffuseB, matDef.alpha));
 				
 				if (matDef.specularExists)
-					material.setProperty(PhongProperties.SPECULAR, (matDef.specularR, matDef.specularG, matDef.specularB, 1));
+					material.setProperty(PhongProperties.SPECULAR, toRGBA(matDef.specularR, matDef.specularG, matDef.specularB, 1));
 				
 				if (matDef.diffuseMapRef && matDef.diffuseMap)
 					material.setProperty(BasicProperties.DIFFUSE_MAP, matDef.diffuseMap);
