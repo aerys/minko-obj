@@ -561,7 +561,7 @@ package aerys.minko.type.parser.obj
 						
 						indexStream.push(indexList[0], indexList[2], indexList[1]);
 						
-						if (i == numObjItem - 1 || (_queue[i + 1].type != ObjItem.FACE && _queue[i + 1].type != ObjItem.SURFACE))
+						if (i == numObjItem - 1 || (_queue[i + 1].type != ObjItem.FACE && _queue[i + 1].type != ObjItem.SURFACE || _queue[i + 1].type == ObjItem.SURFACE && _queue[i + 2].type == ObjItem.MTL))
 						{
 							if (currentGroup == null)
 								currentGroup = result;
